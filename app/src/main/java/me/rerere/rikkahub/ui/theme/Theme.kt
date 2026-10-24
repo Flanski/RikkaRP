@@ -3,6 +3,8 @@ package me.rerere.rikkahub.ui.theme
 import android.os.Build
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
@@ -41,6 +43,41 @@ enum class ColorMode {
     SYSTEM,
     LIGHT,
     DARK
+}
+
+/**
+ * RikkaRP: 与 Material 3 Expressive 的唯一差别是 spatial 阻尼。
+ *
+ * material3 的 ExpressiveMotionSchemeImpl 里 defaultSpatialSpec 是
+ * dampingRatio = 0.6 的弹簧（javap 读常量池确认），属欠阻尼，必然过冲。
+ * 而形状动画 rememberAnimatedShape 用线性插值：
+ *     corner = a * (1 - t) + b * t
+ * 一旦 t 越过 1，且 a、b 一个是非零一个是零，结果就是负角半径，
+ * 抛 "Corner size in Px can't be negative" 直接把 App 打崩。
+ *
+ * 临界阻尼（dampingRatio = 1.0）在数学上严格不过冲，t 恒在 [0, 1] 内。
+ * 代价是失去位移/尺寸的过冲弹跳；本项目是直角硬边风格，影响不大。
+ * 若以后要恢复弹跳，必须同时保证任何 CornerBasedShape 的相邻状态
+ * 不做「非零 -> 零」的插值，否则此崩溃会复现。
+ */
+private val SharpMotionScheme = object : MotionScheme {
+    override fun <T> defaultSpatialSpec(): FiniteAnimationSpec<T> =
+        spring(dampingRatio = 1f, stiffness = 700f)
+
+    override fun <T> fastSpatialSpec(): FiniteAnimationSpec<T> =
+        spring(dampingRatio = 1f, stiffness = 1400f)
+
+    override fun <T> slowSpatialSpec(): FiniteAnimationSpec<T> =
+        spring(dampingRatio = 1f, stiffness = 300f)
+
+    override fun <T> defaultEffectsSpec(): FiniteAnimationSpec<T> =
+        spring(dampingRatio = 1f, stiffness = 1600f)
+
+    override fun <T> fastEffectsSpec(): FiniteAnimationSpec<T> =
+        spring(dampingRatio = 1f, stiffness = 3800f)
+
+    override fun <T> slowEffectsSpec(): FiniteAnimationSpec<T> =
+        spring(dampingRatio = 1f, stiffness = 800f)
 }
 
 @Composable
@@ -107,7 +144,7 @@ fun RikkahubTheme(
             typography = Typography,
             shapes = SharpShapes,
             content = content,
-            motionScheme = MotionScheme.expressive()
+            motionScheme = SharpMotionScheme
         )
     }
 }
