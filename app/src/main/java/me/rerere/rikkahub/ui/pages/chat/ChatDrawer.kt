@@ -54,8 +54,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import me.rerere.hugeicons.stroke.MessageAdd01
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.delay
@@ -156,6 +159,10 @@ fun MessagesPage(currentId: Uuid? = null) {
         }
     }
 
+    // 顶栏展示用：昵称为空时回落到「用户」
+    val userNickname = settings.displaySetting.userNickname
+        .ifBlank { stringResource(R.string.user_default_name) }
+
     // 移动对话状态
     var showMoveToAssistantSheet by remember { mutableStateOf(false) }
     var conversationToMove by remember { mutableStateOf<Conversation?>(null) }
@@ -207,63 +214,6 @@ fun MessagesPage(currentId: Uuid? = null) {
                 onClick = { navController.navigate(Screen.Backup) },
             )
 
-            // 用户头像和昵称自定义区域
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                UIAvatar(
-                    name = settings.displaySetting.userNickname.ifBlank { stringResource(R.string.user_default_name) },
-                    value = settings.displaySetting.userAvatar,
-                    onUpdate = { newAvatar ->
-                        vm.updateSettings {
-                            it.copy(
-                                displaySetting = it.displaySetting.copy(
-                                    userAvatar = newAvatar
-                                )
-                            )
-                        }
-                    },
-                    modifier = Modifier.size(50.dp),
-                )
-
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Text(
-                            text = settings.displaySetting.userNickname.ifBlank { stringResource(R.string.user_default_name) },
-                            style = MaterialTheme.typography.titleMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.clickable {
-                                nicknameEditState.open(settings.displaySetting.userNickname)
-                            }
-                        )
-
-                        Icon(
-                            imageVector = HugeIcons.PencilEdit01,
-                            contentDescription = "Edit",
-                            modifier = Modifier
-                                .onClick {
-                                    nicknameEditState.open(settings.displaySetting.userNickname)
-                                }
-                                .size(LocalTextStyle.current.fontSize.toDp())
-                        )
-                    }
-                    Greeting(
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                }
-            }
-
             DrawerActions(navController = navController)
 
             Row(
@@ -305,13 +255,60 @@ fun MessagesPage(currentId: Uuid? = null) {
     Scaffold(
         topBar = {
             SharpTopBar(
-                title = stringResource(R.string.messages_page_title),
+                titleContent = {
+                    // 头像与昵称放在顶栏，替掉原来的「消息」文字标签。
+                    // 头像按顶栏高度等比缩小到 30dp（对角线同步缩小，不变形）。
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        UIAvatar(
+                            name = userNickname,
+                            value = settings.displaySetting.userAvatar,
+                            onUpdate = { newAvatar ->
+                                vm.updateSettings {
+                                    it.copy(
+                                        displaySetting = it.displaySetting.copy(
+                                            userAvatar = newAvatar
+                                        )
+                                    )
+                                }
+                            },
+                            modifier = Modifier.size(30.dp),
+                        )
+                        Text(
+                            text = userNickname,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.clickable {
+                                nicknameEditState.open(settings.displaySetting.userNickname)
+                            },
+                        )
+                        Icon(
+                            imageVector = HugeIcons.PencilEdit01,
+                            contentDescription = stringResource(R.string.chat_page_edit_nickname),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .size(14.dp)
+                                .onClick {
+                                    nicknameEditState.open(settings.displaySetting.userNickname)
+                                },
+                        )
+                    }
+                },
                 actions = {
-                    SharpIconButton(onClick = { navController.navigate(Screen.Setting) }) {
-                        Icon(HugeIcons.Settings03, null)
+                    // 与对话页右上角一致的新对话按钮：直接新建会话并进入
+                    SharpIconButton(onClick = { navigateToChatPage(navController) }) {
+                        Icon(HugeIcons.MessageAdd01, stringResource(R.string.chat_page_new_message))
                     }
                 },
             )
+        },
+        bottomBar = {
+            MessagesBottomBar(navController = navController)
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { contentPadding ->
@@ -392,91 +389,6 @@ fun MessagesPage(currentId: Uuid? = null) {
                 }
             )
 
-            Row(
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-            ) {
-                DrawerAction(
-                    icon = {
-                        Icon(
-                            imageVector = HugeIcons.LookTop,
-                            contentDescription = stringResource(R.string.assistant_page_title)
-                        )
-                    },
-                    label = {
-                        Text(stringResource(R.string.assistant_page_title))
-                    },
-                    onClick = {
-                        navController.navigate(Screen.Assistant)
-                    },
-                )
-
-                Box {
-                    DrawerAction(
-                        icon = {
-                            Icon(HugeIcons.Sparkles, "Menu")
-                        },
-                        label = {
-                            Text(stringResource(R.string.menu))
-                        },
-                        onClick = {
-                            showMenuPopup = true
-                        },
-                    )
-                    DropdownMenu(
-                        expanded = showMenuPopup,
-                        onDismissRequest = { showMenuPopup = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.chat_page_menu_image_generation)) },
-                            leadingIcon = { Icon(HugeIcons.Image02, null) },
-                            onClick = {
-                                showMenuPopup = false
-                                navController.navigate(Screen.ImageGen)
-                            }
-                        )
-                    }
-                }
-
-                DrawerAction(
-                    icon = {
-                        Icon(HugeIcons.InLove, stringResource(R.string.favorite_page_title))
-                    },
-                    label = {
-                        Text(stringResource(R.string.favorite_page_title))
-                    },
-                    onClick = {
-                        navController.navigate(Screen.Favorite)
-                    },
-                )
-
-                DrawerAction(
-                    icon = {
-                        Icon(HugeIcons.ChartColumn, "统计数据")
-                    },
-                    label = {
-                        Text("统计数据")
-                    },
-                    onClick = {
-                        navController.navigate(Screen.Stats)
-                    },
-                )
-
-                Spacer(Modifier.weight(1f))
-
-                DrawerAction(
-                    icon = {
-                        Icon(HugeIcons.Settings03, null)
-                    },
-                    label = { Text(stringResource(R.string.settings)) },
-                    onClick = {
-                        navController.navigate(Screen.Setting)
-                    },
-                )
-            }
         }
     }
 

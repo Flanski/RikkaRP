@@ -76,6 +76,7 @@ import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.hugeicons.stroke.Image02
 import me.rerere.hugeicons.stroke.Search01
 import me.rerere.hugeicons.stroke.Sparkles
+import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.ui.QRCodeScannerDialog
 import me.rerere.rikkahub.Screen
@@ -146,13 +147,9 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
 
     Scaffold(
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = {
-                    Text(text = stringResource(R.string.setting_provider_page_title))
-                },
-                navigationIcon = {
-                    BackButton()
-                },
+                        SharpTopBar(
+                title = stringResource(R.string.setting_provider_page_title),
+                navigation = { BackButton() },
                 actions = {
                     RecommendProviderButton { provider ->
                         addProvider(provider.copyProvider(Uuid.random()))
@@ -164,9 +161,8 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
                         addProvider(provider)
                         navController.navigate(Screen.SettingProviderDetail(providerId = provider.id.toString()))
                     }
+                
                 },
-                scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),

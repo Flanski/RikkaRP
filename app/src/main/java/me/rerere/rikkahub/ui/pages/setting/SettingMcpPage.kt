@@ -68,6 +68,7 @@ import me.rerere.hugeicons.stroke.FileImport
 import me.rerere.hugeicons.stroke.McpServer
 import me.rerere.hugeicons.stroke.MessageBlocked
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.ai.mcp.McpCommonOptions
 import me.rerere.rikkahub.data.ai.mcp.McpManager
@@ -95,36 +96,9 @@ fun SettingMcpPage(vm: SettingVM = koinViewModel()) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = {
-                    Text(stringResource(R.string.setting_mcp_page_title))
-                },
-                navigationIcon = {
-                    BackButton()
-                },
-                actions = {
-                    IconButton(
-                        onClick = {
-                            showImportDialog = true
-                        }
-                    ) {
-                        Icon(HugeIcons.FileImport, null)
-                    }
-                    IconButton(
-                        onClick = {
-                            // 名称为空的配置不会连接，先加进列表，具体配置到详情页里填
-                            val config = McpServerConfig.StreamableHTTPServer()
-                            vm.updateSettings { latest ->
-                                latest.copy(mcpServers = latest.mcpServers + config)
-                            }
-                            navController.navigate(Screen.SettingMcpDetail(serverId = config.id.toString()))
-                        }
-                    ) {
-                        Icon(HugeIcons.Add01, null)
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors
+                        SharpTopBar(
+                title = stringResource(R.string.setting_mcp_page_title),
+                navigation = { BackButton() },
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),

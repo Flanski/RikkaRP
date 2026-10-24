@@ -106,6 +106,8 @@ import me.rerere.hugeicons.stroke.Share01
 import me.rerere.hugeicons.stroke.Tick01
 import me.rerere.hugeicons.stroke.Tools
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.ui.components.sharp.SharpSwitch
+import me.rerere.rikkahub.ui.components.sharp.SharpTabs
 import me.rerere.rikkahub.data.ai.account.preserveCredential
 import me.rerere.rikkahub.ui.components.ai.ExtensionEmptyState
 import me.rerere.rikkahub.ui.components.ai.ModelAbilityTag
@@ -178,6 +180,10 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val provider = settings.providers.find { it.id == id } ?: return
+    // RikkaRP: 编辑中的副本与删除弹窗状态提升到本层，供顶栏的保存/删除按钮使用
+    val scope = rememberCoroutineScope()
+    var internalProvider by remember(provider) { mutableStateOf(provider) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     val pager = rememberPagerState { ProviderDetailTab.entries.size }
     val toaster = LocalToaster.current
     val context = LocalContext.current
@@ -232,6 +238,26 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                             Icon(HugeIcons.Share01, null)
                         }
                     }
+                    // 连接测试（原在底部浮动工具栏）
+                    ProviderConnectionTester(internalProvider = internalProvider)
+                    // 保存（原在底部浮动工具栏）
+                    IconButton(
+                        onClick = {
+                            val providerToSave: ProviderSetting = internalProvider
+                            onEdit(providerToSave.copyProvider(name = providerToSave.name.trim()))
+                        }
+                    ) {
+                        Icon(
+                            imageVector = HugeIcons.FloppyDisk,
+                            contentDescription = stringResource(R.string.setting_provider_page_save),
+                        )
+                    }
+                    // 删除（原在底部工具栏 leadingContent；用户只指定了前三者顺序，故顺延在后）
+                    if (!internalProvider.builtIn) {
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(HugeIcons.Delete01, stringResource(R.string.delete))
+                        }
+                    }
                 }
             )
         },
@@ -242,11 +268,13 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                 .padding(it)
                 .consumeWindowInsets(it)
         ) {
-            PagerTabs(
-                pagerState = pager,
-                tabs = ProviderDetailTab.entries,
-                modifier = Modifier.padding(vertical = 4.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
+            // RikkaRP: 换成 SharpUI 选项卡（直角、选中蓝底白字）
+            SharpTabs(
+                labels = ProviderDetailTab.entries.map { it.label },
+                icons = ProviderDetailTab.entries.map { it.icon },
+                selectedIndex = pager.currentPage,
+                onSelect = { index -> scope.launch { pager.animateScrollToPage(index) } },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
 
             HorizontalPager(
@@ -259,6 +287,10 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                     ProviderDetailTab.CONFIG -> {
                         SettingProviderConfigPage(
                             provider = provider,
+                            internalProvider = internalProvider,
+                            onInternalProviderChange = { internalProvider = it },
+                            showDeleteDialog = showDeleteDialog,
+                            onShowDeleteDialogChange = { showDeleteDialog = it },
                             onEdit = {
                                 onEdit(it)
                                 toaster.show(
@@ -294,11 +326,13 @@ fun SettingProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
 @Composable
 private fun SettingProviderConfigPage(
     provider: ProviderSetting,
+    internalProvider: ProviderSetting,
+    onInternalProviderChange: (ProviderSetting) -> Unit,
+    showDeleteDialog: Boolean,
+    onShowDeleteDialogChange: (Boolean) -> Unit,
     onEdit: (ProviderSetting) -> Unit,
     onDelete: () -> Unit
 ) {
-    var internalProvider by remember(provider) { mutableStateOf(provider) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
     var expanded by rememberSaveable { mutableStateOf(true) }
 
     Box(
@@ -322,7 +356,7 @@ private fun SettingProviderConfigPage(
             ProviderConfigure(
                 provider = internalProvider,
                 onEdit = {
-                    internalProvider = it
+                    onInternalProviderChange(it)
                 }
             )
 
@@ -334,7 +368,7 @@ private fun SettingProviderConfigPage(
                     supportingContent = if (provider.supportsQuota) {
                         { ProviderQuotaText(providerSetting = provider) }
                     } else null,
-                    onEdit = { internalProvider = apiKeyProvider.withQuotaQuery(it) }
+                    onEdit = { onInternalProviderChange(apiKeyProvider.withQuotaQuery(it)) }
                 )
             }
 
@@ -347,65 +381,12 @@ private fun SettingProviderConfigPage(
                 )
             }
         }
-
-        // 键盘弹出时收起，不然会盖住正在输入的那一行
-        AnimatedVisibility(
-            visible = !WindowInsets.isImeVisible,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = -ScreenOffset),
-            enter = fadeIn() + scaleIn(initialScale = 0.8f),
-            exit = fadeOut() + scaleOut(targetScale = 0.8f),
-        ) {
-            HorizontalFloatingToolbar(
-                expanded = expanded,
-                colors = CustomColors.floatingToolbarColors,
-                leadingContent = {
-                    ProviderConnectionTester(
-                        internalProvider = internalProvider,
-                    )
-
-                    if (!internalProvider.builtIn) {
-                        IconButton(
-                            onClick = {
-                                showDeleteDialog = true
-                            },
-                        ) {
-                            Icon(HugeIcons.Delete01, stringResource(R.string.delete))
-                        }
-                    }
-                },
-            ) {
-                Button(
-                    onClick = {
-                        val providerToSave: ProviderSetting = internalProvider
-                        onEdit(providerToSave.copyProvider(name = providerToSave.name.trim()))
-                    }
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            HugeIcons.FloppyDisk,
-                            contentDescription = stringResource(R.string.setting_provider_page_save)
-                        )
-                        AnimatedVisibility(expanded) {
-                            Row {
-                                Spacer(modifier = Modifier.size(8.dp))
-                                Text(stringResource(R.string.setting_provider_page_save))
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     // Delete confirmation dialog
     if (showDeleteDialog) {
         AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
+            onDismissRequest = { onShowDeleteDialogChange(false) },
             title = {
                 Text(stringResource(R.string.confirm_delete))
             },
@@ -413,14 +394,14 @@ private fun SettingProviderConfigPage(
                 Text(stringResource(R.string.setting_provider_page_delete_dialog_text))
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
+                TextButton(onClick = { onShowDeleteDialogChange(false) }) {
                     Text(stringResource(R.string.cancel))
                 }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showDeleteDialog = false
+                        onShowDeleteDialogChange(false)
                         onDelete()
                     }
                 ) {
@@ -1440,7 +1421,9 @@ private fun BuiltInToolsSettings(
                     onClick = { toggle(!checked) },
                     colors = itemColors,
                     supportingContent = { Text(description) },
-                    trailingContent = { Switch(checked = checked, onCheckedChange = toggle) },
+                    trailingContent = {
+                        SharpSwitch(checked = checked, onCheckedChange = toggle)
+                    },
                     headlineContent = { Text(title) },
                 )
             }

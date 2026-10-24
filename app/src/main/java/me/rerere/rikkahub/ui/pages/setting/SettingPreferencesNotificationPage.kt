@@ -35,6 +35,7 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.rikkahub.BuildConfig
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
 import me.rerere.rikkahub.data.datastore.DisplaySetting
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
@@ -91,15 +92,9 @@ fun SettingPreferencesNotificationPage(vm: SettingVM = koinViewModel()) {
 
     Scaffold(
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = {
-                    Text(stringResource(R.string.setting_page_preferences_notification))
-                },
-                navigationIcon = {
-                    BackButton()
-                },
-                scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors
+                        SharpTopBar(
+                title = stringResource(R.string.setting_page_preferences_notification),
+                navigation = { BackButton() },
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),

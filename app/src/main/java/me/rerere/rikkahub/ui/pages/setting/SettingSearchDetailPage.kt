@@ -47,6 +47,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import me.rerere.highlight.LocalCodeHighlighter
+import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.richtext.HighlightCodeVisualTransformation
@@ -86,13 +87,9 @@ fun SettingSearchDetailPage(
 
     Scaffold(
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = {
-                    Text(options.displayName)
-                },
-                navigationIcon = {
-                    BackButton()
-                },
+                        SharpTopBar(
+                title = options.displayName,
+                navigation = { BackButton() },
                 actions = {
                     if (settings.searchServices.size > 1) {
                         IconButton(
@@ -109,9 +106,8 @@ fun SettingSearchDetailPage(
                             )
                         }
                     }
+                
                 },
-                scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),

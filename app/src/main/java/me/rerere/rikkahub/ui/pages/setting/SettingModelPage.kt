@@ -34,6 +34,7 @@ import me.rerere.hugeicons.stroke.ScanText
 import me.rerere.hugeicons.stroke.Translate
 import me.rerere.hugeicons.stroke.Zap
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.ui.components.ai.ModelField
 import me.rerere.rikkahub.ui.components.ai.ModelListSheet
@@ -70,11 +71,9 @@ fun SettingModelPage(vm: SettingVM = koinViewModel()) {
     Scaffold(
         containerColor = CustomColors.topBarColors.containerColor,
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.setting_model_page_title)) },
-                navigationIcon = { BackButton() },
-                scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors,
+                        SharpTopBar(
+                title = stringResource(R.string.setting_model_page_title),
+                navigation = { BackButton() },
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),

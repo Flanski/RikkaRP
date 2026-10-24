@@ -77,6 +77,7 @@ import me.rerere.hugeicons.stroke.FileAudio
 import me.rerere.hugeicons.stroke.FileVideo
 import me.rerere.hugeicons.stroke.FolderOpen
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
 import me.rerere.rikkahub.data.db.entity.ManagedFileEntity
 import me.rerere.rikkahub.data.files.FileFolders
 import me.rerere.rikkahub.data.files.FilesManager
@@ -174,22 +175,9 @@ fun SettingFilesPage(
 
     Scaffold(
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = { Text(stringResource(R.string.setting_files_page_title)) },
-                navigationIcon = { BackButton() },
-                actions = {
-                    IconButton(
-                        onClick = { showCleanSheet = true },
-                        enabled = files.isNotEmpty(),
-                    ) {
-                        Icon(
-                            imageVector = HugeIcons.Clean,
-                            contentDescription = stringResource(R.string.setting_files_page_clean_content_description),
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors
+                        SharpTopBar(
+                title = stringResource(R.string.setting_files_page_title),
+                navigation = { BackButton() },
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),

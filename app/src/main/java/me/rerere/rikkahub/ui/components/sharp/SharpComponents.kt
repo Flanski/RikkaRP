@@ -454,9 +454,11 @@ fun SharpSwitch(
 
 @Composable
 fun SharpTopBar(
-    title: String,
+    title: String? = null,
     modifier: Modifier = Modifier,
     navigation: (@Composable () -> Unit)? = null,
+    /** 自定义标题内容（如头像 + 昵称）。给了它就不再显示 title 文本。 */
+    titleContent: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     Column(
@@ -480,17 +482,25 @@ fun SharpTopBar(
             } else {
                 Spacer(Modifier.width(12.dp))
             }
-            Text(
-                text = title,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 8.dp),
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            if (titleContent != null) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 8.dp),
+                ) { titleContent() }
+            } else {
+                Text(
+                    text = title.orEmpty(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 8.dp),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             Row(verticalAlignment = Alignment.CenterVertically, content = actions)
             Spacer(Modifier.width(4.dp))
         }

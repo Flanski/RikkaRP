@@ -31,6 +31,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.remote.SponsorAPI
 import me.rerere.rikkahub.data.model.Sponsor
@@ -50,15 +51,9 @@ fun SettingDonatePage() {
 
     Scaffold(
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = {
-                    Text(text = stringResource(R.string.donate_page_title))
-                },
-                navigationIcon = {
-                    BackButton()
-                },
-                scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors,
+                        SharpTopBar(
+                title = stringResource(R.string.donate_page_title),
+                navigation = { BackButton() },
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),

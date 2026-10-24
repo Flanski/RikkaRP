@@ -69,7 +69,9 @@ import me.rerere.hugeicons.stroke.SmartPhone01
 import me.rerere.hugeicons.stroke.Sun01
 import me.rerere.hugeicons.stroke.Tiktok
 import me.rerere.hugeicons.stroke.WavingHand01
+import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.ui.components.sharp.SharpButtonMenu
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.isNotConfigured
 import me.rerere.rikkahub.data.files.FilesManager
@@ -127,15 +129,9 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
 
     Scaffold(
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = {
-                    Text(text = stringResource(R.string.settings))
-                },
-                navigationIcon = {
-                    BackButton()
-                },
-                scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors
+                        SharpTopBar(
+                title = stringResource(R.string.settings),
+                navigation = { BackButton() },
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -169,28 +165,28 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                             CardGroupIcon(colorMode.icon(), containerColor = containerColor, contentColor = contentColor)
                             Text(stringResource(R.string.setting_page_color_mode))
                         }
-                        ConnectedChoiceButtons(
+                        // RikkaRP: 三个横排按钮改为 SharpUI 按钮选单（悬浮下拉），
+                        // 避免常驻占掉一整行；展开的列表浮在上层，不挤压下方控件。
+                        SharpButtonMenu(
                             options = ColorMode.entries,
                             selected = colorMode,
-                            onSelect = {
-                                colorMode = it
+                            onSelect = { mode ->
+                                colorMode = mode
                                 navController.navigate(Screen.Setting) {
                                     popUpTo(Screen.Setting) {
                                         inclusive = true
                                     }
                                 }
                             },
-                        ) { mode, selected ->
-                            ConnectedChoiceLabel(
-                                text = when (mode) {
+                            label = { mode ->
+                                when (mode) {
                                     ColorMode.SYSTEM -> stringResource(R.string.setting_page_color_mode_system)
                                     ColorMode.LIGHT -> stringResource(R.string.setting_page_color_mode_light)
                                     ColorMode.DARK -> stringResource(R.string.setting_page_color_mode_dark)
-                                },
-                                selected = selected,
-                                icon = mode.icon(),
-                            )
-                        }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                     item(
                         onClick = { navController.navigate(Screen.SettingPreferences) },

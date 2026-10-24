@@ -55,6 +55,7 @@ import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Mic01
 import me.rerere.hugeicons.stroke.StopCircle
 import me.rerere.hugeicons.stroke.VolumeHigh
+import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.DEFAULT_SYSTEM_TTS_ID
 import me.rerere.rikkahub.data.datastore.Settings
@@ -101,13 +102,9 @@ fun SettingSpeechPage(vm: SettingVM = koinViewModel()) {
 
     Scaffold(
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = {
-                    Text(text = stringResource(R.string.speech_page_title))
-                },
-                navigationIcon = {
-                    BackButton()
-                },
+                        SharpTopBar(
+                title = stringResource(R.string.speech_page_title),
+                navigation = { BackButton() },
                 actions = {
                     when (SpeechTab.entries[pagerState.targetPage]) {
                         SpeechTab.TTS -> AddTTSProviderButton {
@@ -127,9 +124,8 @@ fun SettingSpeechPage(vm: SettingVM = koinViewModel()) {
                             }
                         }
                     }
+                
                 },
-                scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),

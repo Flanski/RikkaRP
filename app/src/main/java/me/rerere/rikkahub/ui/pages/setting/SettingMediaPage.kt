@@ -58,6 +58,7 @@ import me.rerere.hugeicons.stroke.Image02
 import me.rerere.mediagen.model.MediaKind
 import me.rerere.mediagen.provider.MediaGenerationProviderSetting
 import me.rerere.rikkahub.R
+import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.remote.RemoteFileStore
@@ -106,28 +107,9 @@ fun SettingMediaPage(vm: SettingVM = koinViewModel()) {
 
     Scaffold(
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = {
-                    Text(stringResource(R.string.setting_page_media))
-                },
-                navigationIcon = {
-                    BackButton()
-                },
-                actions = {
-                    if (MediaTab.entries[pagerState.targetPage] == MediaTab.PROVIDERS) {
-                        AddMediaProviderButton { provider ->
-                            // 先加进列表，具体配置到详情页里填
-                            vm.updateSettings { latest ->
-                                latest.copy(
-                                    mediaGenerationProviders = listOf(provider) + latest.mediaGenerationProviders
-                                )
-                            }
-                            navController.navigate(Screen.SettingMediaProviderDetail(providerId = provider.id.toString()))
-                        }
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors
+                        SharpTopBar(
+                title = stringResource(R.string.setting_page_media),
+                navigation = { BackButton() },
             )
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
