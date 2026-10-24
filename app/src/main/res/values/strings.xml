@@ -408,6 +408,7 @@
   <string name="language_traditional_chinese">🇨🇳 繁體中文</string>
   <string name="mcp_picker_syncing">Syncing MCP servers...</string>
   <string name="mcp_picker_title">MCP Servers</string>
+  <string name="messages_page_title">Messages</string>
   <string name="menu">Menu</string>
   <string name="menu_page_afternoon_greeting">Good afternoon\uD83D\uDC4B</string>
   <string name="menu_page_evening_greeting">Good evening\uD83D\uDC4B</string>

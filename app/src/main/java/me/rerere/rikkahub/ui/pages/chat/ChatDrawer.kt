@@ -1,5 +1,12 @@
 package me.rerere.rikkahub.ui.pages.chat
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Scaffold
+import me.rerere.rikkahub.ui.components.sharp.SharpIconButton
+import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
+import me.rerere.rikkahub.ui.context.LocalNavController
+import me.rerere.rikkahub.ui.context.LocalSettings
+
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -103,27 +110,24 @@ import org.koin.compose.koinInject
 import kotlin.uuid.Uuid
 
 @Composable
-fun ChatDrawerContent(
-    navController: Navigator,
-    vm: ChatVM,
-    settings: Settings,
-    current: Conversation,
-) {
+fun MessagesPage(currentId: Uuid? = null) {
+    val navController = LocalNavController.current
+    val settings = LocalSettings.current
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val toaster = LocalToaster.current
     val repo = koinInject<ConversationRepository>()
 
     val activity = context as ComponentActivity
-    val drawerVm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = activity)
+    val vm: ChatDrawerVM = koinViewModel(viewModelStoreOwner = activity)
 
-    val conversations = drawerVm.conversations.collectAsLazyPagingItems()
-    val folders by drawerVm.folders.collectAsStateWithLifecycle()
-    val selectedFolderId by drawerVm.selectedFolderId.collectAsStateWithLifecycle()
-    val memoryDreaming by drawerVm.memoryDreaming.collectAsStateWithLifecycle()
+    val conversations = vm.conversations.collectAsLazyPagingItems()
+    val folders by vm.folders.collectAsStateWithLifecycle()
+    val selectedFolderId by vm.selectedFolderId.collectAsStateWithLifecycle()
+    val memoryDreaming by vm.memoryDreaming.collectAsStateWithLifecycle()
     val conversationListState = rememberLazyListState(
-        initialFirstVisibleItemIndex = drawerVm.scrollIndex,
-        initialFirstVisibleItemScrollOffset = drawerVm.scrollOffset,
+        initialFirstVisibleItemIndex = vm.scrollIndex,
+        initialFirstVisibleItemScrollOffset = vm.scrollOffset,
     )
 
     LaunchedEffect(conversationListState) {
@@ -133,7 +137,7 @@ fun ChatDrawerContent(
         }
             .distinctUntilChanged()
             .collectLatest { (index, offset) ->
-                drawerVm.saveScrollPosition(index, offset)
+                vm.saveScrollPosition(index, offset)
             }
     }
 
@@ -272,7 +276,7 @@ fun ChatDrawerContent(
                 FolderBar(
                     folders = folders,
                     selectedFolderId = selectedFolderId,
-                    onSelect = { drawerVm.selectFolder(it) },
+                    onSelect = { vm.selectFolder(it) },
                     onCreate = { showCreateFolderDialog = true },
                     onRename = { folderToRename = it },
                     onDelete = { folderToDelete = it },
@@ -297,19 +301,31 @@ fun ChatDrawerContent(
         }
     }
 
-    ModalDrawerSheet(
-        modifier = Modifier.width(300.dp)
-    ) {
+    // RikkaRP: 由「抽屉」改为独立消息页，全屏铺满
+    Scaffold(
+        topBar = {
+            SharpTopBar(
+                title = stringResource(R.string.messages_page_title),
+                actions = {
+                    SharpIconButton(onClick = { navController.navigate(Screen.Setting) }) {
+                        Icon(HugeIcons.Settings03, null)
+                    }
+                },
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { contentPadding ->
         Column(
-            modifier = Modifier.padding(8.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+                .padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            if (!scrollableHeader) {
-                drawerHeader()
-            }
+            drawerHeader()
 
             ConversationList(
-                current = current,
+                currentId = currentId,
                 conversations = conversations,
                 conversationJobs = conversationJobs.keys,
                 listState = conversationListState,
@@ -327,7 +343,7 @@ fun ChatDrawerContent(
                     scope.launch {
                         vm.deleteConversation(it).join()
                         conversations.refresh()
-                        if (it.id == current.id) {
+                        if (it.id == currentId) {
                             navigateToChatPage(navController)
                         }
                     }
@@ -507,7 +523,7 @@ fun ChatDrawerContent(
     if (showMoveToFolderSheet) {
         val doMove: (Uuid?) -> Unit = { folderId ->
             conversationToMoveFolder?.let { conversation ->
-                drawerVm.moveConversationToFolder(conversation.id, folderId)
+                vm.moveConversationToFolder(conversation.id, folderId)
                 scope.launch {
                     folderSheetState.hide()
                     showMoveToFolderSheet = false
@@ -618,7 +634,7 @@ fun ChatDrawerContent(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        drawerVm.createFolder(name)
+                        vm.createFolder(name)
                         showCreateFolderDialog = false
                     },
                     enabled = name.isNotBlank()
@@ -649,7 +665,7 @@ fun ChatDrawerContent(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        drawerVm.renameFolder(folder.id, name)
+                        vm.renameFolder(folder.id, name)
                         folderToRename = null
                     },
                     enabled = name.isNotBlank()
@@ -672,7 +688,7 @@ fun ChatDrawerContent(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (drawerVm.deleteFolder(folder.id)) {
+                        if (vm.deleteFolder(folder.id)) {
                             folderToDelete = null
                             conversations.refresh()
                         } else {
@@ -737,7 +753,7 @@ fun ChatDrawerContent(
 }
 
 @Composable
-private fun DrawerActions(navController: Navigator) {
+internal fun DrawerActions(navController: Navigator) {
     Column {
         // 历史记录入口，行尾是搜索入口
         DrawerEntry(
@@ -766,7 +782,7 @@ private fun DrawerActions(navController: Navigator) {
 }
 
 @Composable
-private fun DrawerEntry(
+internal fun DrawerEntry(
     icon: ImageVector,
     text: String,
     onClick: () -> Unit,
@@ -826,7 +842,7 @@ private fun DrawerEntry(
 
 // 后台正在整理当前助手的记忆，点开是记忆页
 @Composable
-private fun MemoryDreamingEntry(onClick: () -> Unit) {
+internal fun MemoryDreamingEntry(onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         modifier = Modifier
@@ -853,7 +869,7 @@ private fun MemoryDreamingEntry(onClick: () -> Unit) {
 }
 
 @Composable
-private fun DrawerAction(
+internal fun DrawerAction(
     modifier: Modifier = Modifier,
     icon: @Composable () -> Unit,
     label: @Composable () -> Unit,
@@ -883,7 +899,7 @@ private fun DrawerAction(
 }
 
 @Composable
-private fun FolderBar(
+internal fun FolderBar(
     folders: List<Folder>,
     selectedFolderId: Uuid?,
     onSelect: (Uuid?) -> Unit,
@@ -951,7 +967,7 @@ private fun FolderBar(
 }
 
 @Composable
-private fun ConversationSortButton(
+internal fun ConversationSortButton(
     sortOrder: ConversationSortOrder,
     onSortOrderChange: (ConversationSortOrder) -> Unit,
 ) {
@@ -1046,7 +1062,7 @@ private fun FolderChip(
 }
 
 @Composable
-private fun AssistantItem(
+internal fun AssistantItem(
     assistant: Assistant,
     isCurrentAssistant: Boolean,
     onClick: () -> Unit

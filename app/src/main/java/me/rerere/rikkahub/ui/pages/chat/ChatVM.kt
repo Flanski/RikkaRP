@@ -45,6 +45,7 @@ import me.rerere.rikkahub.service.ChatService
 import me.rerere.rikkahub.ui.hooks.writeStringPreference
 import me.rerere.rikkahub.ui.hooks.ChatInputState
 import me.rerere.rikkahub.utils.UiState
+import me.rerere.rikkahub.ui.components.ui.UpdateHost
 import me.rerere.rikkahub.utils.UpdateChecker
 import me.rerere.rikkahub.web.ApiException
 import java.util.Locale
@@ -57,10 +58,10 @@ class ChatVM(
     private val context: Application,
     private val settingsStore: SettingsStore,
     private val chatService: ChatService,
-    val updateChecker: UpdateChecker,
+    override val updateChecker: UpdateChecker,
     private val filesManager: FilesManager,
     private val favoriteRepository: FavoriteRepository,
-) : ViewModel() {
+) : ViewModel(), UpdateHost {
     private val _conversationId: Uuid = Uuid.parse(id)
     val conversation: StateFlow<Conversation> = chatService.getConversationFlow(_conversationId)
     var chatListInitialized by mutableStateOf(false) // 聊天列表是否已经滚动到底部
@@ -203,7 +204,7 @@ class ChatVM(
     }
 
     // Update checker
-    val updateState = settingsStore.settingsFlow
+    override val updateState = settingsStore.settingsFlow
         .map { settings ->
             !BuildConfig.IS_PLAY_STORE &&
                 !settings.init &&

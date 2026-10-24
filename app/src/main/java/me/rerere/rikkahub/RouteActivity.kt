@@ -91,6 +91,7 @@ import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantPromptPage
 import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantRequestPage
 import me.rerere.rikkahub.ui.pages.backup.BackupPage
 import me.rerere.rikkahub.ui.pages.chat.ChatPage
+import me.rerere.rikkahub.ui.pages.chat.MessagesPage
 import me.rerere.rikkahub.ui.pages.debug.DebugPage
 import me.rerere.rikkahub.ui.pages.extensions.ExtensionsPage
 import me.rerere.rikkahub.ui.pages.extensions.PromptPage
@@ -291,16 +292,8 @@ class RouteActivity : ComponentActivity() {
         }
         val migrationState by DatabaseMigrationTracker.state.collectAsStateWithLifecycle()
 
-        val startScreen = Screen.Chat(
-            id = if (readBooleanPreference("create_new_conversation_on_start", true)) {
-                Uuid.random().toString()
-            } else {
-                readStringPreference(
-                    "lastConversationId",
-                    Uuid.random().toString()
-                ) ?: Uuid.random().toString()
-            }
-        )
+        // RikkaRP: 启动首页改为消息页（原抽屉里的会话列表）
+        val startScreen: Screen = Screen.Messages
 
         val backStack = rememberNavBackStack(startScreen)
         SideEffect {
@@ -361,6 +354,10 @@ class RouteActivity : ComponentActivity() {
                                     files = key.files.map { it.toUri() },
                                     nodeId = key.nodeId?.let { Uuid.parse(it) }
                                 )
+                            }
+
+                            entry<Screen.Messages> {
+                                MessagesPage()
                             }
 
                             entry<Screen.ShareHandler> { key ->
@@ -658,6 +655,10 @@ sealed interface Screen : NavKey {
         val files: List<String> = emptyList(),
         val nodeId: String? = null
     ) : Screen
+
+    /** RikkaRP: 消息页（首页）——会话列表与入口，从原抽屉独立出来 */
+    @Serializable
+    data object Messages : Screen
 
     @Serializable
     data class ShareHandler(val text: String, val streamUri: String? = null) : Screen

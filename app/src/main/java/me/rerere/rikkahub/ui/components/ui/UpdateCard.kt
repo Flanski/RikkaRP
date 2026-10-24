@@ -19,6 +19,10 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
+import kotlinx.coroutines.flow.StateFlow
+import me.rerere.rikkahub.utils.UiState
+import me.rerere.rikkahub.utils.UpdateChecker
+import me.rerere.rikkahub.utils.UpdateInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,9 +55,21 @@ import kotlin.time.Instant
 import kotlin.time.toJavaInstant
 
 @OptIn(ExperimentalTime::class)
+
+/**
+ * RikkaRP: 更新检查所需的最小能力集合。
+ *
+ * ChatVM（对话页）与 ChatDrawerVM（消息页）都实现它，这样 UpdateCard 不必
+ * 依赖「按对话创建」的 ChatVM，消息页也能显示更新提示。
+ */
+interface UpdateHost {
+    val updateState: StateFlow<UiState<UpdateInfo>>
+    val updateChecker: UpdateChecker
+}
+
 @Composable
-fun UpdateCard(vm: ChatVM) {
-    val state by vm.updateState.collectAsStateWithLifecycle()
+fun UpdateCard(host: UpdateHost) {
+    val state by host.updateState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val toaster = LocalToaster.current
     state.onError {
@@ -123,7 +139,7 @@ fun UpdateCard(vm: ChatVM) {
         }
         if (showDetail) {
             val downloadHandler = useThrottle<UpdateDownload>(500) { item ->
-                vm.updateChecker.downloadUpdate(context, item)
+                host.updateChecker.downloadUpdate(context, item)
                 showDetail = false
                 toaster.show(context.getString(R.string.update_card_downloading), type = ToastType.Info)
             }

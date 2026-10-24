@@ -57,6 +57,7 @@ import me.rerere.ai.provider.Model
 import me.rerere.ai.provider.ProviderSetting
 import me.rerere.ai.ui.UIMessagePart
 import me.rerere.hugeicons.HugeIcons
+import me.rerere.hugeicons.stroke.ArrowLeft01
 import me.rerere.hugeicons.stroke.Cancel01
 import me.rerere.hugeicons.stroke.LeftToRightListBullet
 import me.rerere.hugeicons.stroke.Menu03
@@ -116,36 +117,12 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
         vm.updateDraftFolder(selectedFolderId)
     }
 
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
-
-    // Handle back press when drawer is open
-    BackHandler(enabled = drawerState.isOpen) {
-        scope.launch {
-            drawerState.close()
-        }
-    }
-
-    // Clear input focus so popup transitions cannot reopen the keyboard.
-    LaunchedEffect(drawerState.isOpen) {
-        if (drawerState.isOpen) {
-            focusManager.clearFocus(force = true)
-            softwareKeyboardController?.hide()
-        }
-    }
 
     val windowAdaptiveInfo = currentWindowDpSize()
     val isBigScreen =
         windowAdaptiveInfo.width > windowAdaptiveInfo.height && windowAdaptiveInfo.width >= 1100.dp
-
-    // 进入大屏（永久抽屉）模式时重置抽屉状态为关闭，
-    // 避免从横屏旋转回竖屏后，模态抽屉残留为打开状态且无法关闭（#1304）
-    LaunchedEffect(isBigScreen) {
-        if (isBigScreen && drawerState.isOpen) {
-            drawerState.close()
-        }
-    }
 
     val startVoiceMode = rememberVoiceModeStarter(vm, setting)
 
@@ -194,75 +171,24 @@ fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
         }
     }
 
-    when {
-        isBigScreen -> {
-            PermanentNavigationDrawer(
-                drawerContent = {
-                    ChatDrawerContent(
-                        navController = navController,
-                        current = conversation,
-                        vm = vm,
-                        settings = setting
-                    )
-                }
-            ) {
-                ChatPageContent(
-                    onStartVoiceMode = startVoiceMode,
-                    inputState = inputState,
-                    loadingJob = loadingJob,
-                    processingStatus = processingStatus,
-                    setting = setting,
-                    conversation = conversation,
-                    drawerState = drawerState,
-                    navController = navController,
-                    vm = vm,
-                    chatListState = chatListState,
-                    assistant = assistant,
-                    currentChatModel = currentChatModel,
-                    bigScreen = true,
-                    errors = errors,
-                    onDismissError = { vm.dismissError(it) },
-                    onClearAllErrors = { vm.clearAllErrors() },
-                )
-            }
-        }
-
-        else -> {
-            ModalNavigationDrawer(
-                drawerState = drawerState,
-                drawerContent = {
-                    ChatDrawerContent(
-                        navController = navController,
-                        current = conversation,
-                        vm = vm,
-                        settings = setting
-                    )
-                }
-            ) {
-                ChatPageContent(
-                    onStartVoiceMode = startVoiceMode,
-                    inputState = inputState,
-                    loadingJob = loadingJob,
-                    processingStatus = processingStatus,
-                    setting = setting,
-                    conversation = conversation,
-                    drawerState = drawerState,
-                    navController = navController,
-                    vm = vm,
-                    chatListState = chatListState,
-                    assistant = assistant,
-                    currentChatModel = currentChatModel,
-                    bigScreen = false,
-                    errors = errors,
-                    onDismissError = { vm.dismissError(it) },
-                    onClearAllErrors = { vm.clearAllErrors() },
-                )
-            }
-            BackHandler(drawerState.isOpen) {
-                scope.launch { drawerState.close() }
-            }
-        }
-    }
+    // RikkaRP: 抽屉已独立为「消息页」，对话页不再内嵌抽屉；左上角改为返回。
+    ChatPageContent(
+        onStartVoiceMode = startVoiceMode,
+        inputState = inputState,
+        loadingJob = loadingJob,
+        processingStatus = processingStatus,
+        setting = setting,
+        conversation = conversation,
+        navController = navController,
+        vm = vm,
+        chatListState = chatListState,
+        assistant = assistant,
+        currentChatModel = currentChatModel,
+        bigScreen = isBigScreen,
+        errors = errors,
+        onDismissError = { vm.dismissError(it) },
+        onClearAllErrors = { vm.clearAllErrors() },
+    )
 }
 
 @Composable
@@ -274,7 +200,6 @@ private fun ChatPageContent(
     setting: Settings,
     bigScreen: Boolean,
     conversation: Conversation,
-    drawerState: DrawerState,
     navController: Navigator,
     vm: ChatVM,
     chatListState: LazyListState,
@@ -326,7 +251,6 @@ private fun ChatPageContent(
                     chatModel = currentChatModel,
                     conversation = conversation,
                     bigScreen = bigScreen,
-                    drawerState = drawerState,
                     previewMode = previewMode,
                     onNewChat = {
                         navigateToChatPage(navController)
@@ -563,7 +487,6 @@ private fun TopBar(
     assistant: Assistant,
     chatModel: Model?,
     conversation: Conversation,
-    drawerState: DrawerState,
     bigScreen: Boolean,
     previewMode: Boolean,
     onClickMenu: () -> Unit,
@@ -572,6 +495,7 @@ private fun TopBar(
 ) {
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
+    val navController = LocalNavController.current
     val titleState = useEditState<String> {
         onUpdateTitle(it)
     }
@@ -580,12 +504,11 @@ private fun TopBar(
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
         navigationIcon = {
             if (!bigScreen) {
+                // RikkaRP: 抽屉已独立成消息页，这里改为返回
                 IconButton(
-                    onClick = {
-                        scope.launch { drawerState.open() }
-                    }
+                    onClick = { navController.popBackStack() },
                 ) {
-                    Icon(HugeIcons.Menu03, "Messages")
+                    Icon(HugeIcons.ArrowLeft01, "Back")
                 }
             }
         },

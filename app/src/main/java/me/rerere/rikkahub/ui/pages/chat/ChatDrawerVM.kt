@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.ui.pages.chat
 
 import android.app.Application
+import androidx.core.net.toUri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,6 +9,7 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.insertSeparators
 import androidx.paging.map
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,17 +24,24 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import me.rerere.rikkahub.BuildConfig
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.ai.MemoryConsolidationScheduler
 import me.rerere.rikkahub.data.datastore.ConversationSortOrder
+import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.SettingsStore
+import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.data.model.Conversation
+import me.rerere.rikkahub.data.model.Avatar
 import me.rerere.rikkahub.data.model.Folder
 import me.rerere.rikkahub.data.repository.ConversationRepository
 import me.rerere.rikkahub.data.repository.FolderRepository
 import me.rerere.rikkahub.data.repository.memoryId
 import me.rerere.rikkahub.service.ChatService
+import me.rerere.rikkahub.ui.components.ui.UpdateHost
+import me.rerere.rikkahub.utils.UpdateChecker
+import me.rerere.rikkahub.utils.UiState
 import me.rerere.rikkahub.utils.toLocalString
 import java.time.LocalDate
 import java.time.ZoneId
@@ -45,8 +54,10 @@ class ChatDrawerVM(
     private val folderRepo: FolderRepository,
     private val chatService: ChatService,
     private val memoryConsolidationScheduler: MemoryConsolidationScheduler,
+    private val filesManager: FilesManager,
+    override val updateChecker: UpdateChecker,
     private val savedStateHandle: SavedStateHandle,
-) : ViewModel() {
+) : ViewModel(), UpdateHost {
 
     private val assistantIdFlow = settingsStore.settingsFlow
         .map { it.assistantId }
@@ -185,6 +196,74 @@ class ChatDrawerVM(
             ConversationSortOrder.CREATE_TIME -> createAt
         }
         return instant.atZone(ZoneId.systemDefault()).toLocalDate()
+    }
+
+    // 更新检查：判定条件与 ChatVM 保持一致
+    override val updateState = settingsStore.settingsFlow
+        .map { settings ->
+            !BuildConfig.IS_PLAY_STORE &&
+                !settings.init &&
+                settings.displaySetting.updateCheckDisabledUntilEpochMillis <= System.currentTimeMillis()
+        }
+        .distinctUntilChanged()
+        .flatMapLatest { enabled ->
+            if (enabled) updateChecker.updateState else flowOf(UiState.Loading)
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000),
+            UiState.Loading,
+        )
+
+    // ===== RikkaRP: 消息页独立后新增（原属 ChatVM，按对话 id 操作，不依赖具体实例）=====
+
+    /** 当前正在生成的对话 id 集合，列表里显示「生成中」标记 */
+    val conversationJobs = chatService
+        .getConversationJobs()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    /** 更新设置。切换用户头像时删除旧的图片文件，避免垃圾堆积。 */
+    fun updateSettings(fn: (Settings) -> Settings): Job {
+        return viewModelScope.launch {
+            var oldSettings: Settings? = null
+            var newSettings: Settings? = null
+            settingsStore.update { old ->
+                fn(old).also { new ->
+                    oldSettings = old
+                    newSettings = new
+                }
+            }
+            val oldAvatar = (oldSettings ?: return@launch).displaySetting.userAvatar
+            val newAvatar = (newSettings ?: return@launch).displaySetting.userAvatar
+            if (oldAvatar is Avatar.Image && oldAvatar != newAvatar) {
+                filesManager.deleteChatFiles(listOf(oldAvatar.url.toUri()))
+            }
+        }
+    }
+
+    // 注：conversations 是 Paging3 的 Flow（由 Room 驱动），删除后列表会自动更新，
+    // 这里不需要（也没法）调用 refresh()——那是 LazyPagingItems 的方法。
+    fun deleteConversation(conversation: Conversation): Job =
+        viewModelScope.launch {
+            chatService.deleteConversation(conversation.id)
+        }
+
+    fun updatePinnedStatus(conversation: Conversation) {
+        viewModelScope.launch {
+            chatService.toggleConversationPinned(conversation.id)
+        }
+    }
+
+    fun moveConversationToAssistant(conversation: Conversation, targetAssistantId: Uuid) {
+        viewModelScope.launch {
+            chatService.moveConversationToAssistant(conversation.id, targetAssistantId)
+        }
+    }
+
+    fun generateTitle(conversation: Conversation, force: Boolean = false) {
+        viewModelScope.launch {
+            chatService.generateTitle(conversation.id, force)
+        }
     }
 
     private fun getDateLabel(date: LocalDate): String {
