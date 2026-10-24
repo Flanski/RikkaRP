@@ -164,4 +164,11 @@ val SharpShapes = Shapes(
     medium = RoundedCornerShape(0.dp),
     large = RoundedCornerShape(0.dp),
     extraLarge = RoundedCornerShape(0.dp),
+    // 下面三个槽位必须一并归零。Material3 的 Shapes 共 8 个槽位，只传前 5 个时
+    // 后三个沿用库默认的非零圆角；而 Button/Chip/NavigationDrawerItem 等组件的
+    // 按压形变动画会用 rememberAnimatedShape 在「非零」与「零」之间做弹簧插值，
+    // 弹簧过冲会把角半径算成负数，抛 "Corner size in Px can't be negative"。
+    largeIncreased = RoundedCornerShape(0.dp),
+    extraLargeIncreased = RoundedCornerShape(0.dp),
+    extraExtraLarge = RoundedCornerShape(0.dp),
 )
