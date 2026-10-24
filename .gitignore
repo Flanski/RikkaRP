@@ -11,3 +11,5 @@ local.properties
 .cursor
 .history
 .kotlin
+# 模块级构建产物（RikkaRP 追加）
+build/

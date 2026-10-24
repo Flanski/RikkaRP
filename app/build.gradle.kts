@@ -9,8 +9,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.crashlytics)
+    // RikkaRP: google-services 插件已移除（详见 NOTICE：不使用上游 Firebase）
     alias(libs.plugins.baselineprofile)
 }
 
@@ -23,11 +22,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "me.rerere.rikkahub"
+        applicationId = "io.github.flanski.rikkarp"
         minSdk = 26
         targetSdk = 37
-        versionCode = 193
-        versionName = "3.1.0"
+        versionCode = 194
+        versionName = "3.1.0-rp.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -187,10 +186,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.androidx.material3.adaptive.navigation3)
 
-    // Firebase
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
-    implementation(libs.firebase.crashlytics)
+    // RikkaRP: 已移除 Firebase（Analytics / Crashlytics）。
+    // 原因：debug 构建需要 google-services.json 而上游未提供；且 fork 不应向
+    // 上游作者名下的 Firebase 项目上报使用数据。
 
     // DataStore
     implementation(libs.androidx.datastore.preferences)

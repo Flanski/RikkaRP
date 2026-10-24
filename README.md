@@ -1,3 +1,11 @@
+<!-- RIKKARP-FORK-BANNER -->
+> [!IMPORTANT]
+> **RikkaRP is an UNOFFICIAL fork of [RikkaHub](https://github.com/rikkahub/rikkahub).**
+> It is not affiliated with, endorsed by, or supported by the upstream author.
+> Please report all issues to **this** repository, never upstream.
+> Licensed under **AGPL-3.0** — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+> Source: https://github.com/Flanski/RikkaRP
+
 <div align="center">
   <img src="docs/icon.png" alt="App Icon" width="100" />
   <h1>RikkaHub</h1>

@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.ui.pages.assistant
 
+import me.rerere.rikkahub.ui.components.sharp.SharpIconButton
+import me.rerere.rikkahub.ui.components.sharp.SharpTextField
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Copy01
 import me.rerere.hugeicons.stroke.Add01
@@ -160,31 +162,23 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
             }
 
             // 搜索框
-            TextField(
+            SharpTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                placeholder = { Text(stringResource(R.string.assistant_page_search_placeholder)) },
-                leadingIcon = {
+                placeholder = stringResource(R.string.assistant_page_search_placeholder),
+                leading = {
                     Icon(HugeIcons.Search01, contentDescription = null)
                 },
-                trailingIcon = {
+                trailing = {
                     if (searchQuery.isNotBlank()) {
-                        IconButton(onClick = { searchQuery = "" }) {
+                        SharpIconButton(onClick = { searchQuery = "" }) {
                             Icon(HugeIcons.Cancel01, contentDescription = null)
                         }
                     }
                 },
-                singleLine = true,
-                shape = CircleShape,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceBright,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceBright,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                ),
             )
 
             // 标签过滤器
@@ -425,7 +419,7 @@ private fun AssistantItem(
     Card(
         modifier = modifier.fillMaxWidth(),
         onClick = onEdit,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(0.dp),
         colors = CardDefaults.cardColors(
             containerColor = CustomColors.listItemColors.containerColor
         )

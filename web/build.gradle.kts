@@ -31,6 +31,15 @@ val buildWebUi = tasks.register<Exec>("buildWebUi") {
     inputs.dir(webUiDir.dir("app"))
     inputs.dir(webUiDir.dir("public"))
     outputs.dir(webStaticResourcesDir)
+
+    // RikkaRP: 本机（Termux）默认没有 Node/pnpm 工具链，这里默认跳过 WebUI 构建，
+    // 否则 :web:preBuild 会因为找不到 pnpm 而让整个 assembleDebug 失败。
+    // 需要 Web UI 时先安装工具链，再带开关构建：
+    //   pkg install nodejs && npm i -g pnpm
+    //   RIKKARP_BUILD_WEBUI=true gradle assembleDebug
+    onlyIf {
+        System.getenv("RIKKARP_BUILD_WEBUI") == "true"
+    }
 }
 
 android {

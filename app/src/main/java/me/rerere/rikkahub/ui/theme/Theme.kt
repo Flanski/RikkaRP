@@ -21,6 +21,9 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import kotlinx.serialization.Serializable
 import me.rerere.rikkahub.ui.hooks.rememberAmoledDarkMode
+import me.rerere.rikkahub.ui.theme.sharp.SharpPalette
+import me.rerere.rikkahub.ui.theme.sharp.SharpShapes
+import me.rerere.rikkahub.ui.theme.sharp.SharpTheme
 import me.rerere.rikkahub.ui.hooks.rememberCurrentColorMode
 import me.rerere.rikkahub.ui.hooks.rememberUserSettingsState
 import me.rerere.rikkahub.utils.getActivity
@@ -54,17 +57,12 @@ fun RikkahubTheme(
     }
     val amoledDarkMode by rememberAmoledDarkMode()
 
-    val colorScheme = when {
-        settings.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        else -> {
-            val theme = findThemeById(settings.themeId, settings.customThemes)
-                ?: findPresetTheme(settings.themeId)
-            theme.getColorScheme(dark = darkTheme)
-        }
-    }
+    // RikkaRP: 统一走 Sharp 设计系统，不再使用上游预设主题（保留 settings 读取以免
+    // 触发设置结构变更；如需恢复上游主题，把下面一行换回原来的 when 分支即可）。
+    val colorScheme = SharpTheme.colorScheme(
+        dark = darkTheme,
+        saturated = SharpPalette.saturated,
+    )
     val colorSchemeConverted = remember(darkTheme, amoledDarkMode, colorScheme) {
         if (darkTheme && amoledDarkMode) {
             colorScheme.copy(
@@ -107,6 +105,7 @@ fun RikkahubTheme(
         MaterialExpressiveTheme(
             colorScheme = colorSchemeConverted,
             typography = Typography,
+            shapes = SharpShapes,
             content = content,
             motionScheme = MotionScheme.expressive()
         )

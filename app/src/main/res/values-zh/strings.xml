@@ -3,11 +3,13 @@
   <string name="about_page_github">Github</string>
   <string name="about_page_license">License</string>
   <string name="about_page_system">系统</string>
+  <string name="about_page_notice">RikkaRP 是 RikkaHub 3.1.0 的非官方修改分支，与原作者无关联、未获其背书。版权归 RikkaHub 贡献者所有。本程序按 GNU AGPL-3.0 发布，不提供任何担保。对应源码：https://github.com/Flanski/RikkaRP</string>
+  <string name="about_page_upstream">上游项目</string>
   <string name="about_page_title">关于</string>
   <string name="about_page_version">版本</string>
   <string name="about_page_website">官网</string>
   <string name="add">添加</string>
-  <string name="app_name">RikkaHub</string>
+  <string name="app_name">RikkaRP</string>
   <string name="asr_button_content_description">语音识别</string>
   <string name="asr_button_stop">停止</string>
   <string name="assistant_detail_basic_desc">配置名称、头像、模型和参数</string>
