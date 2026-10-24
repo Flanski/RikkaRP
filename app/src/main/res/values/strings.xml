@@ -410,6 +410,9 @@
   <string name="mcp_picker_title">MCP Servers</string>
   <string name="messages_page_title">Messages</string>
   <string name="messages_bottom_stats">Statistics</string>
+  <string name="chat_page_swipe_pin">Pin</string>
+  <string name="chat_page_swipe_unpin">Unpin</string>
+  <string name="chat_page_swipe_more">More</string>
   <string name="menu">Menu</string>
   <string name="menu_page_afternoon_greeting">Good afternoon\uD83D\uDC4B</string>
   <string name="menu_page_evening_greeting">Good evening\uD83D\uDC4B</string>

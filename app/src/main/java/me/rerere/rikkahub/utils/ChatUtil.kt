@@ -18,14 +18,20 @@ fun navigateToChatPage(
     nodeId: Uuid? = null,
 ) {
     Log.i(TAG, "navigateToChatPage: navigate to $chatId")
-    navigator.clearAndNavigate(
+    // RikkaRP: 原实现用 clearAndNavigate 清空整个返回栈，导致栈里只剩对话页，
+    // 系统返回键无法回到消息页（直接退回桌面）。
+    // 改为「回退到消息页再压入对话页」，栈变成 [Messages, Chat]，
+    // 同时避免反复切换对话时栈无限增长。
+    navigator.navigate(
         Screen.Chat(
             id = chatId.toString(),
             text = initText,
             files = initFiles.map { it.toString() },
             nodeId = nodeId?.toString(),
         )
-    )
+    ) {
+        popUpTo(Screen.Messages)
+    }
 }
 
 fun Context.copyMessageToClipboard(message: UIMessage) {

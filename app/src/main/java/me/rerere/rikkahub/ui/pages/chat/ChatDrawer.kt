@@ -319,14 +319,14 @@ fun MessagesPage(currentId: Uuid? = null) {
                 .padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            drawerHeader()
-
+            // RikkaRP: header 全部交给 LazyColumn 作为列表首项，
+            // 页面整体可滚动；原先固定在外层 Column 里，内容一多就把列表挤没。
             ConversationList(
                 currentId = currentId,
                 conversations = conversations,
                 conversationJobs = conversationJobs.keys,
                 listState = conversationListState,
-                header = if (scrollableHeader) drawerHeader else null,
+                header = drawerHeader,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),

@@ -3,6 +3,7 @@ package me.rerere.rikkahub.ui.pages.chat
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Folder01
 import me.rerere.hugeicons.stroke.Forward02
+import me.rerere.hugeicons.stroke.MoreHorizontal
 import me.rerere.hugeicons.stroke.Pin
 import me.rerere.hugeicons.stroke.PinOff
 import me.rerere.hugeicons.stroke.Refresh01
@@ -93,6 +94,9 @@ fun ColumnScope.ConversationList(
 ) {
     // currentId 为空（无选中会话）时视为已完成滚动，避免无意义定位
     var hasScrolledToCurrent by remember(currentId) { mutableStateOf(currentId == null) }
+    // 左滑菜单里点「更多」后要弹出原有的长按菜单，状态提到这一层，
+    // 因为 ConversationItem 被 SwipeableRow 包了一层，外部需要能触发它。
+    var menuOpenFor by remember { mutableStateOf<Uuid?>(null) }
     // 列表顶部若放了 header，会话项在 LazyColumn 中的位置要往后挪一位
     val headerCount = if (header != null) 1 else 0
 
@@ -169,18 +173,54 @@ fun ColumnScope.ConversationList(
                 }
 
                 is ConversationListItem.Item -> {
-                    ConversationItem(
-                        conversation = item.conversation,
-                        selected = item.conversation.id == currentId,
-                        loading = item.conversation.id in conversationJobs,
-                        onClick = onClick,
-                        onDelete = onDelete,
-                        onRegenerateTitle = onRegenerateTitle,
-                        onPin = onPin,
-                        onMoveToAssistant = onMoveToAssistant,
-                        onMoveToFolder = onMoveToFolder,
-                        modifier = Modifier.animateItem()
-                    )
+                    val conv = item.conversation
+                    // RikkaRP: 左滑露出「置顶 / 更多 / 删除」，逻辑全部复用原有的回调
+                    SwipeableRow(
+                        modifier = Modifier.animateItem(),
+                        actions = listOf(
+                            SwipeAction(
+                                label = if (conv.isPinned) {
+                                    stringResource(R.string.chat_page_swipe_unpin)
+                                } else {
+                                    stringResource(R.string.chat_page_swipe_pin)
+                                },
+                                icon = if (conv.isPinned) HugeIcons.PinOff else HugeIcons.Pin,
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                onClick = { onPin(conv) },
+                            ),
+                            SwipeAction(
+                                label = stringResource(R.string.chat_page_swipe_more),
+                                icon = HugeIcons.MoreHorizontal,
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                onClick = { menuOpenFor = conv.id },
+                            ),
+                            SwipeAction(
+                                label = stringResource(R.string.chat_page_delete),
+                                icon = HugeIcons.Delete01,
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                onClick = { onDelete(conv) },
+                            ),
+                        ),
+                    ) {
+                        ConversationItem(
+                            conversation = conv,
+                            selected = conv.id == currentId,
+                            loading = conv.id in conversationJobs,
+                            onClick = onClick,
+                            onDelete = onDelete,
+                            onRegenerateTitle = onRegenerateTitle,
+                            onPin = onPin,
+                            onMoveToAssistant = onMoveToAssistant,
+                            onMoveToFolder = onMoveToFolder,
+                            showMenu = menuOpenFor == conv.id,
+                            onShowMenuChange = { open ->
+                                menuOpenFor = if (open) conv.id else null
+                            },
+                        )
+                    }
                 }
 
                 null -> {
@@ -250,7 +290,9 @@ private fun ConversationItem(
     onPin: (Conversation) -> Unit = {},
     onMoveToAssistant: (Conversation) -> Unit = {},
     onMoveToFolder: (Conversation) -> Unit = {},
-    onClick: (Conversation) -> Unit
+    onClick: (Conversation) -> Unit,
+    showMenu: Boolean = false,
+    onShowMenuChange: (Boolean) -> Unit = {},
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focusManager = LocalFocusManager.current
@@ -258,9 +300,6 @@ private fun ConversationItem(
         MaterialTheme.colorScheme.surfaceColorAtElevation(8.dp)
     } else {
         Color.Transparent
-    }
-    var showDropdownMenu by remember {
-        mutableStateOf(false)
     }
     Box(
         modifier = modifier
@@ -272,7 +311,7 @@ private fun ConversationItem(
                 onLongClick = {
                     // Also clear chat input focus when the drawer is permanently visible.
                     focusManager.clearFocus(force = true)
-                    showDropdownMenu = true
+                    onShowMenuChange(true)
                 }
             )
             .background(backgroundColor),
@@ -311,8 +350,8 @@ private fun ConversationItem(
                 )
             }
             DropdownMenu(
-                expanded = showDropdownMenu,
-                onDismissRequest = { showDropdownMenu = false },
+                expanded = showMenu,
+                onDismissRequest = { onShowMenuChange(false) },
             ) {
                 DropdownMenuItem(
                     text = {
@@ -322,7 +361,7 @@ private fun ConversationItem(
                     },
                     onClick = {
                         onPin(conversation)
-                        showDropdownMenu = false
+                        onShowMenuChange(false)
                     },
                     leadingIcon = {
                         Icon(
@@ -338,7 +377,7 @@ private fun ConversationItem(
                     },
                     onClick = {
                         onRegenerateTitle(conversation)
-                        showDropdownMenu = false
+                        onShowMenuChange(false)
                     },
                     leadingIcon = {
                         Icon(HugeIcons.Refresh01, null)
@@ -351,7 +390,7 @@ private fun ConversationItem(
                     },
                     onClick = {
                         onMoveToAssistant(conversation)
-                        showDropdownMenu = false
+                        onShowMenuChange(false)
                     },
                     leadingIcon = {
                         Icon(HugeIcons.Forward02, null, modifier = Modifier.mirrorForRtl())
@@ -364,7 +403,7 @@ private fun ConversationItem(
                     },
                     onClick = {
                         onMoveToFolder(conversation)
-                        showDropdownMenu = false
+                        onShowMenuChange(false)
                     },
                     leadingIcon = {
                         Icon(HugeIcons.Folder01, null)
@@ -377,7 +416,7 @@ private fun ConversationItem(
                     },
                     onClick = {
                         onDelete(conversation)
-                        showDropdownMenu = false
+                        onShowMenuChange(false)
                     },
                     leadingIcon = {
                         Icon(HugeIcons.Delete01, null)

@@ -409,6 +409,9 @@
   <string name="mcp_picker_title">MCP服务器</string>
   <string name="messages_page_title">消息</string>
   <string name="messages_bottom_stats">统计</string>
+  <string name="chat_page_swipe_pin">置顶</string>
+  <string name="chat_page_swipe_unpin">取消置顶</string>
+  <string name="chat_page_swipe_more">更多</string>
   <string name="menu">菜单</string>
   <string name="menu_page_afternoon_greeting">下午好\uD83D\uDC4B</string>
   <string name="menu_page_evening_greeting">晚上好\uD83D\uDC4B</string>

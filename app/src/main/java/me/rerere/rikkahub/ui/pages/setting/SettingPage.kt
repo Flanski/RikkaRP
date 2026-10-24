@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -158,35 +159,35 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                     title = { Text(stringResource(R.string.setting_page_general_settings)) },
                 ) {
                     formItem {
+                        // RikkaRP: 按钮选单放在「颜色模式」这一行的右侧，
+                        // 不再另起一行占掉纵向空间。
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             CardGroupIcon(colorMode.icon(), containerColor = containerColor, contentColor = contentColor)
                             Text(stringResource(R.string.setting_page_color_mode))
-                        }
-                        // RikkaRP: 三个横排按钮改为 SharpUI 按钮选单（悬浮下拉），
-                        // 避免常驻占掉一整行；展开的列表浮在上层，不挤压下方控件。
-                        SharpButtonMenu(
-                            options = ColorMode.entries,
-                            selected = colorMode,
-                            onSelect = { mode ->
-                                colorMode = mode
-                                navController.navigate(Screen.Setting) {
-                                    popUpTo(Screen.Setting) {
-                                        inclusive = true
+                            Spacer(Modifier.weight(1f))
+                            SharpButtonMenu(
+                                options = ColorMode.entries,
+                                selected = colorMode,
+                                onSelect = { mode ->
+                                    colorMode = mode
+                                    navController.navigate(Screen.Setting) {
+                                        popUpTo(Screen.Setting) {
+                                            inclusive = true
+                                        }
                                     }
-                                }
-                            },
-                            label = { mode ->
-                                when (mode) {
-                                    ColorMode.SYSTEM -> stringResource(R.string.setting_page_color_mode_system)
-                                    ColorMode.LIGHT -> stringResource(R.string.setting_page_color_mode_light)
-                                    ColorMode.DARK -> stringResource(R.string.setting_page_color_mode_dark)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                                },
+                                label = { mode ->
+                                    when (mode) {
+                                        ColorMode.SYSTEM -> stringResource(R.string.setting_page_color_mode_system)
+                                        ColorMode.LIGHT -> stringResource(R.string.setting_page_color_mode_light)
+                                        ColorMode.DARK -> stringResource(R.string.setting_page_color_mode_dark)
+                                    }
+                                },
+                            )
+                        }
                     }
                     item(
                         onClick = { navController.navigate(Screen.SettingPreferences) },

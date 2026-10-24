@@ -1,6 +1,14 @@
 package me.rerere.rikkahub.ui.pages.chat
 
 import androidx.compose.foundation.background
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -55,29 +63,34 @@ fun MessagesBottomBar(navController: Navigator) {
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
                 .navigationBarsPadding(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+            // 等分：每项 weight(1f)，间距由布局均分，不会因文字长短而错位
         ) {
             BottomItem(
+                modifier = Modifier.weight(1f),
                 icon = HugeIcons.LookTop,
                 label = stringResource(R.string.assistant_page_title),
                 onClick = { navController.navigate(Screen.Assistant) },
             )
             BottomItem(
+                modifier = Modifier.weight(1f),
                 icon = HugeIcons.Sparkles,
                 label = stringResource(R.string.chat_page_menu_image_generation),
                 onClick = { navController.navigate(Screen.ImageGen) },
             )
             BottomItem(
+                modifier = Modifier.weight(1f),
                 icon = HugeIcons.InLove,
                 label = stringResource(R.string.favorite_page_title),
                 onClick = { navController.navigate(Screen.Favorite) },
             )
             BottomItem(
+                modifier = Modifier.weight(1f),
                 icon = HugeIcons.ChartColumn,
                 label = stringResource(R.string.messages_bottom_stats),
                 onClick = { navController.navigate(Screen.Stats) },
             )
             BottomItem(
+                modifier = Modifier.weight(1f),
                 icon = HugeIcons.Settings03,
                 label = stringResource(R.string.settings),
                 onClick = { navController.navigate(Screen.Setting) },
@@ -91,12 +104,24 @@ private fun BottomItem(
     icon: ImageVector,
     label: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    // SharpUI 手感：按下线性缩小，松开低阻尼弹簧回弹
+    val scale = remember { Animatable(1f) }
+    LaunchedEffect(pressed) {
+        if (pressed) {
+            scale.animateTo(SharpMotion.PressScale, tween(SharpMotion.PressMs, easing = SharpMotion.easing))
+        } else {
+            scale.animateTo(1f, spring(SharpMotion.DampingRatio, SharpMotion.Stiffness))
+        }
+    }
     Column(
-        modifier = Modifier
+        modifier = modifier
+            .graphicsLayer { scaleX = scale.value; scaleY = scale.value }
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
