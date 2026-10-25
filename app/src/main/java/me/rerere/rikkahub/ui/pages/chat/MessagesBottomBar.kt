@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ChartColumn
-import me.rerere.hugeicons.stroke.InLove
+import me.rerere.hugeicons.stroke.Star
 import me.rerere.hugeicons.stroke.LookTop
 import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.hugeicons.stroke.Sparkles
@@ -79,7 +79,8 @@ fun MessagesBottomBar(navController: Navigator) {
             )
             BottomItem(
                 modifier = Modifier.weight(1f),
-                icon = HugeIcons.InLove,
+                // 镂空简约五角星（stroke 线性图标，非实心）
+                icon = HugeIcons.Star,
                 label = stringResource(R.string.favorite_page_title),
                 onClick = { navController.navigate(Screen.Favorite) },
             )

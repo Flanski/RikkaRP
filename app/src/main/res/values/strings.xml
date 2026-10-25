@@ -413,6 +413,8 @@
   <string name="chat_page_swipe_pin">Pin</string>
   <string name="chat_page_swipe_unpin">Unpin</string>
   <string name="chat_page_swipe_more">More</string>
+  <string name="chat_page_more_actions">More</string>
+  <string name="chat_page_switch_assistant">Switch assistant</string>
   <string name="menu">Menu</string>
   <string name="menu_page_afternoon_greeting">Good afternoon\uD83D\uDC4B</string>
   <string name="menu_page_evening_greeting">Good evening\uD83D\uDC4B</string>
@@ -1291,7 +1293,7 @@
   <string name="chat_page_delete_folder">Delete Folder</string>
   <string name="chat_page_rename">Rename</string>
   <string name="chat_page_folder_default">Chat</string>
-  <string name="chat_page_folder_add">New</string>
+  <string name="chat_page_folder_add">New group</string>
   <string name="chat_page_delete_folder_confirm">Delete folder "%1$s"? Conversations inside will not be deleted, only removed from the folder.</string>
   <string name="chat_page_delete_folder_generating">Some conversations in this folder are still generating. Please stop them before deleting.</string>
   <string name="assistant_page_context_message_limit">Context Message Limit</string>

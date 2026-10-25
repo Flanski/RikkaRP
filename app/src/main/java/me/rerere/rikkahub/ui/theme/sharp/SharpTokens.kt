@@ -61,6 +61,17 @@ object SharpColors {
     val DialogError = Color(0xFFF56C6C)
     /** warning 头部用黑字，其余用白字 */
     val OnWarning = Color(0xFF000000)
+
+    // —— 以下三项为 SharpUI 弹窗系统的依赖，数值照抄原版 ——
+
+    /** 线框 / 分隔线（点缀白） */
+    val Outline = Color(0x66FFFFFF)
+
+    /** 弹窗遮罩（Demo: rgba(0,0,0,.5)） */
+    val Scrim = Color(0x80000000)
+
+    /** 白底按钮的按下态（蓝色容器内，如弹窗底部按钮） */
+    val InversePressed = Color(0xFFD6E9FF)
 }
 
 /** 饱和模式开关：true 时页面底用 SharpUI 原版深蓝。 */
@@ -105,6 +116,12 @@ object SharpDimens {
     /** 小圆点/角标 */
     val dot = 6.dp
 
+    /** 直角滚动条宽度（SharpUI 原值 9dp） */
+    val scrollbar = 9.dp
+
+    /** 滚动条滑块最小高度 */
+    val scrollbarMinThumb = 24.dp
+
     /** 弹窗：高度占屏 1/3（Demo 原值 33.333vh） */
     const val DIALOG_HEIGHT_RATIO = 0.33333f
     /** 弹窗遮罩 */
@@ -144,6 +161,23 @@ object SharpMotion {
 
     /** 弹窗过冲峰值：先放大到该值再弹回 1.0 */
     const val DialogPeak = 1.06f
+
+    // —— 弹窗内越界拉动 ——
+
+    /** 越界拉动时弹窗整体的最大位移 */
+    const val DialogOverscrollDp = 5f
+
+    /** 越界拉动量的阻尼系数（0..1） */
+    const val DialogOverscrollDamping = 1f
+
+    /** 越界拉动松手后的复位时长。刻意不用弹簧 —— 弹簧会过冲抖动。 */
+    const val DialogOverscrollReturnMs = 220
+
+    /** 底部弹窗收起时底边的收缩指数（>1 比顶边收得更快） */
+    const val DialogBottomCollapseExponent = 1.6f
+
+    /** 底部弹窗收起时顶边的收缩指数（<1 相对更慢） */
+    const val DialogTopCollapseExponent = 0.7f
 
     /** 页面切换 */
     const val PageMs = 300

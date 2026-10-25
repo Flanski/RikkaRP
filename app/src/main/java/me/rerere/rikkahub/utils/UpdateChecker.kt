@@ -1,5 +1,7 @@
 package me.rerere.rikkahub.utils
 
+import java.time.Instant
+import kotlinx.serialization.SerialName
 import android.app.DownloadManager
 import android.content.Context
 import android.os.Environment
@@ -21,7 +23,16 @@ import me.rerere.rikkahub.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
-private const val API_URL = "https://updates.rikka-ai.com/"
+/**
+ * RikkaRP 的更新源。
+ *
+ * 上游用的是自建接口 https://updates.rikka-ai.com/ ，它只发布 RikkaHub 官方版本。
+ * fork 改名为 RikkaRP 后必须换成自己的仓库，否则会把用户导向原版。
+ * 这里直接读 GitHub Releases：
+ *   仓库 https://github.com/Flanski/RikkaRP
+ *   tag 形如 v3.1.1-rp.6（前导 v 会被去掉再比较版本）
+ */
+private const val API_URL = "https://api.github.com/repos/Flanski/RikkaRP/releases/latest"
 
 class UpdateChecker(
     private val client: OkHttpClient,
@@ -44,16 +55,46 @@ class UpdateChecker(
                         Request.Builder()
                             .url(API_URL)
                             .get()
+                            .addHeader("Accept", "application/vnd.github+json")
                             .addHeader(
                                 "User-Agent",
-                                "RikkaHub ${BuildConfig.VERSION_NAME} #${BuildConfig.VERSION_CODE}"
+                                "RikkaRP ${BuildConfig.VERSION_NAME} #${BuildConfig.VERSION_CODE}"
                             )
                             .build()
                     ).await()
-                    if (response.isSuccessful) {
-                        json.decodeFromString<UpdateInfo>(response.body.string())
-                    } else {
-                        throw Exception("Failed to fetch update info")
+                    when {
+                        response.isSuccessful -> {
+                            val release = json.decodeFromString<GithubRelease>(response.body.string())
+                            UpdateInfo(
+                                // tag 可能带前导 v
+                                version = release.tagName.removePrefix("v"),
+                                publishedAt = release.publishedAt,
+                                changelog = release.body.ifBlank { "No release notes." },
+                                downloads = release.assets
+                                    .filter { it.name.endsWith(".apk", ignoreCase = true) }
+                                    .map {
+                                        UpdateDownload(
+                                            name = it.name,
+                                            url = it.downloadUrl,
+                                            size = formatSize(it.size),
+                                        )
+                                    },
+                            )
+                        }
+
+                        // 仓库还没有任何 Release（或首个 Release 尚未发布）。
+                        // 这不是错误，返回「与当前版本相同」即可，避免首页出现红色「检查失败」卡片。
+                        // 注意 publishedAt 必须是合法 ISO-8601 —— UpdateCard 用 Instant.parse 解析。
+                        response.code == 404 -> UpdateInfo(
+                            version = BuildConfig.VERSION_NAME,
+                            publishedAt = Instant.now().toString(),
+                            changelog = "",
+                            downloads = emptyList(),
+                        )
+
+                        else -> throw Exception(
+                            "Failed to fetch update info (HTTP ${response.code})"
+                        )
                     }
                 } catch (e: Exception) {
                     throw Exception("Failed to fetch update info", e)
@@ -104,6 +145,30 @@ data class UpdateInfo(
     val changelog: String,
     val downloads: List<UpdateDownload>
 )
+
+/* ---------------- GitHub Releases 的响应模型（字段名照 API 原文） ---------------- */
+
+@Serializable
+private data class GithubRelease(
+    @SerialName("tag_name") val tagName: String = "",
+    @SerialName("published_at") val publishedAt: String = "",
+    val body: String = "",
+    val assets: List<GithubAsset> = emptyList(),
+)
+
+@Serializable
+private data class GithubAsset(
+    val name: String = "",
+    @SerialName("browser_download_url") val downloadUrl: String = "",
+    val size: Long = 0,
+)
+
+/** 字节数 → 人类可读，供下载列表右侧展示。 */
+private fun formatSize(bytes: Long): String {
+    if (bytes <= 0) return ""
+    val mb = bytes / 1048576.0
+    return if (mb >= 1.0) String.format("%.1f MB", mb) else "${bytes / 1024} KB"
+}
 
 /**
  * 版本号值类，封装版本号字符串并提供比较功能

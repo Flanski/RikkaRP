@@ -1,5 +1,8 @@
 package me.rerere.rikkahub.ui.pages.chat
 
+import me.rerere.rikkahub.ui.components.sharp.LocalSharpDialog
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import me.rerere.rikkahub.ui.components.sharp.SharpIconButton
@@ -72,9 +75,6 @@ import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Folder01
 import me.rerere.hugeicons.stroke.FolderAdd
 import me.rerere.hugeicons.stroke.Image02
-import me.rerere.hugeicons.stroke.ImageToVideo
-import me.rerere.hugeicons.stroke.InLove
-import me.rerere.hugeicons.stroke.LanguageCircle
 import me.rerere.hugeicons.stroke.LookTop
 import me.rerere.hugeicons.stroke.PencilEdit01
 import me.rerere.hugeicons.stroke.Search01
@@ -82,7 +82,6 @@ import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.hugeicons.stroke.Sorting01
 import me.rerere.hugeicons.stroke.Sparkles
 import me.rerere.hugeicons.stroke.Tick01
-import me.rerere.hugeicons.stroke.TransactionHistory
 import me.rerere.rikkahub.BuildConfig
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
@@ -92,7 +91,6 @@ import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.Folder
 import me.rerere.rikkahub.data.repository.ConversationRepository
-import me.rerere.rikkahub.ui.components.ai.AssistantPicker
 import me.rerere.rikkahub.ui.components.ui.BackupReminderCard
 import me.rerere.rikkahub.ui.components.ui.Greeting
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
@@ -195,6 +193,28 @@ fun MessagesPage(currentId: Uuid? = null) {
         }
     }
 
+    // 助手切换。原先由页面底部的 AssistantPicker 触发，
+    // 现在移入顶栏 ≡ 的 SharpUI 弹窗，逻辑原样搬过来。
+    val selectAssistant: (Assistant) -> Unit = { assistant ->
+        val updateJob = vm.updateSettings { it.copy(assistantId = assistant.id) }
+        scope.launch {
+            updateJob.join()
+            val id = if (context.readBooleanPreference("create_new_conversation_on_start", true)) {
+                Uuid.random()
+            } else {
+                repo.getConversationsOfAssistant(assistant.id)
+                    .first()
+                    .firstOrNull()
+                    ?.id ?: Uuid.random()
+            }
+            navigateToChatPage(navigator = navController, chatId = id)
+        }
+    }
+
+    // SharpUI 统一弹窗（完整移植自 sharpui/widgets/dialog）
+    val sharpDialog = LocalSharpDialog.current
+    val defaultAssistantName = stringResource(R.string.assistant_page_default_assistant)
+
     // 矮屏（如手表、横屏手机）上顶部固定会把会话列表挤没，改为跟随列表一起滚动
     val windowHeight = LocalWindowInfo.current.containerDpSize.height
     val scrollableHeader = windowHeight < 640.dp
@@ -213,8 +233,6 @@ fun MessagesPage(currentId: Uuid? = null) {
                 settings = settings,
                 onClick = { navController.navigate(Screen.Backup) },
             )
-
-            DrawerActions(navController = navController)
 
             Row(
                 modifier = Modifier
@@ -300,6 +318,49 @@ fun MessagesPage(currentId: Uuid? = null) {
                     }
                 },
                 actions = {
+                    // 图A-1：聊天历史入口移到放大镜；原先它是会话列表里那一行的行尾图标
+                    SharpIconButton(onClick = { navController.navigate(Screen.History) }) {
+                        Icon(
+                            imageVector = HugeIcons.Search01,
+                            contentDescription = stringResource(R.string.chat_page_history),
+                        )
+                    }
+
+                    // 图A-2：≡ 打开 SharpUI 弹窗，收纳原本占两行的入口
+                    SharpIconButton(onClick = {
+                        val options = listOf(
+                            stringResource(R.string.chat_page_menu_ai_translator),
+                            stringResource(R.string.media_creation_title),
+                            stringResource(R.string.chat_page_menu_image_generation),
+                            // 图A-4：助手选择
+                            stringResource(R.string.chat_page_switch_assistant),
+                        )
+                        sharpDialog.showOptions(
+                            title = stringResource(R.string.chat_page_more_actions),
+                            options = options,
+                        ) { index ->
+                            when (index) {
+                                0 -> navController.navigate(Screen.Translator)
+                                1 -> navController.navigate(Screen.MediaCreationSessions)
+                                2 -> navController.navigate(Screen.ImageGen)
+                                3 -> {
+                                    // 图A-4：助手选择也放进这个弹窗
+                                    sharpDialog.showOptions(
+                                        title = stringResource(R.string.assistant_page_title),
+                                        options = settings.assistants.map { assistant ->
+                                            assistant.name.ifEmpty { defaultAssistantName }
+                                        },
+                                    ) { assistantIndex ->
+                                        settings.assistants.getOrNull(assistantIndex)
+                                            ?.let(selectAssistant)
+                                    }
+                                }
+                            }
+                        }
+                    }) {
+                        TripleLineGlyph(tint = MaterialTheme.colorScheme.onSurface)
+                    }
+
                     // 与对话页右上角一致的新对话按钮：直接新建会话并进入
                     SharpIconButton(onClick = { navigateToChatPage(navController) }) {
                         Icon(HugeIcons.MessageAdd01, stringResource(R.string.chat_page_new_message))
@@ -363,31 +424,6 @@ fun MessagesPage(currentId: Uuid? = null) {
                     onClick = { navController.navigate(Screen.AssistantMemory(settings.assistantId.toString())) },
                 )
             }
-
-            // 助手选择器
-            AssistantPicker(
-                settings = settings,
-                onSelectAssistant = { assistant ->
-                    val updateJob = vm.updateSettings { it.copy(assistantId = assistant.id) }
-                    scope.launch {
-                        updateJob.join()
-                        val id = if (context.readBooleanPreference("create_new_conversation_on_start", true)) {
-                            Uuid.random()
-                        } else {
-                            repo.getConversationsOfAssistant(assistant.id)
-                                .first()
-                                .firstOrNull()
-                                ?.id ?: Uuid.random()
-                        }
-                        navigateToChatPage(navigator = navController, chatId = id)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                onClickSetting = {
-                    val currentAssistantId = settings.assistantId
-                    navController.navigate(Screen.AssistantDetail(id = currentAssistantId.toString()))
-                }
-            )
 
         }
     }
@@ -664,32 +700,36 @@ fun MessagesPage(currentId: Uuid? = null) {
     }
 }
 
+/**
+ * 图A-1 / 图A-2：原先这里的三行入口（聊天历史 / 媒体创作 / AI 翻译）已全部移走 ——
+ * 聊天历史 → 顶栏放大镜；媒体创作、AI 翻译、图像生成、助手 → 顶栏 ≡ 的 SharpUI 弹窗。
+ */
 @Composable
+@Suppress("UNUSED_PARAMETER")
 internal fun DrawerActions(navController: Navigator) {
-    Column {
-        // 历史记录入口，行尾是搜索入口
-        DrawerEntry(
-            icon = HugeIcons.TransactionHistory,
-            text = stringResource(R.string.chat_page_history),
-            onClick = { navController.navigate(Screen.History) },
-            trailingIcon = HugeIcons.Search01,
-            trailingDescription = stringResource(R.string.chat_page_search_chats),
-            onTrailingClick = { navController.navigate(Screen.MessageSearch) },
-        )
+    // 保留空实现：所有入口已迁移到顶栏，此处不再渲染任何内容。
+}
 
-        // 媒体创作入口
-        DrawerEntry(
-            icon = HugeIcons.ImageToVideo,
-            text = stringResource(R.string.media_creation_title),
-            onClick = { navController.navigate(Screen.MediaCreationSessions) },
-        )
-
-        // 翻译入口
-        DrawerEntry(
-            icon = HugeIcons.LanguageCircle,
-            text = stringResource(R.string.chat_page_menu_ai_translator),
-            onClick = { navController.navigate(Screen.Translator) },
-        )
+/**
+ * 「≡」三横线图标。
+ *
+ * 用三条等宽横线自绘，而不是取 HugeIcons 里的菜单图标 ——
+ * 用户明确要求就是这个字形，自绘可以保证与截图上的一致。
+ */
+@Composable
+private fun TripleLineGlyph(tint: Color) {
+    Column(
+        modifier = Modifier.size(18.dp),
+        verticalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        repeat(3) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.5.dp)
+                    .background(tint)
+            )
+        }
     }
 }
 

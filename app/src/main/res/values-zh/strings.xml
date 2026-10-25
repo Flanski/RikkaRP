@@ -412,6 +412,8 @@
   <string name="chat_page_swipe_pin">置顶</string>
   <string name="chat_page_swipe_unpin">取消置顶</string>
   <string name="chat_page_swipe_more">更多</string>
+  <string name="chat_page_more_actions">更多</string>
+  <string name="chat_page_switch_assistant">切换助手</string>
   <string name="menu">菜单</string>
   <string name="menu_page_afternoon_greeting">下午好\uD83D\uDC4B</string>
   <string name="menu_page_evening_greeting">晚上好\uD83D\uDC4B</string>
@@ -1271,7 +1273,7 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="chat_page_delete_folder">删除文件夹</string>
   <string name="chat_page_rename">重命名</string>
   <string name="chat_page_folder_default">聊天</string>
-  <string name="chat_page_folder_add">新建</string>
+  <string name="chat_page_folder_add">新建分组</string>
   <string name="chat_page_delete_folder_confirm">删除文件夹 "%1$s"？其中的对话不会被删除，只会从文件夹中移除。</string>
   <string name="chat_page_delete_folder_generating">此文件夹中有对话仍在生成中，请停止后再删除。</string>
   <string name="assistant_page_context_message_limit">上下文消息限制</string>

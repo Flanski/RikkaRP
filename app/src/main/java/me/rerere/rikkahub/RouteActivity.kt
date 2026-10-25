@@ -60,6 +60,7 @@ import me.rerere.ui.toast.Toaster
 import me.rerere.ui.toast.rememberToasterState
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import me.rerere.rikkahub.ui.components.sharp.SharpDialogHost
 import me.rerere.rikkahub.data.datastore.SettingsStore
 import me.rerere.rikkahub.data.db.DatabaseMigrationTracker
 import me.rerere.rikkahub.data.db.MigrationState
@@ -313,6 +314,10 @@ class RouteActivity : ComponentActivity() {
                 LocalASRState provides asr,
             ) {
                 TTSController()
+                // SharpUI 弹窗宿主：在应用根部包裹一次，
+                // 之后任何页面都能通过 LocalSharpDialog 弹出统一弹窗。
+                // 弹窗图层画在 content 之后，因此覆盖在整个页面之上。
+                SharpDialogHost {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -642,6 +647,7 @@ class RouteActivity : ComponentActivity() {
                         state = toastState,
                         modifier = Modifier.align(Alignment.TopCenter),
                     )
+                }
                 }
             }
         }
