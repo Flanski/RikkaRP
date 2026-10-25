@@ -361,22 +361,35 @@ fun MessagesPage(currentId: Uuid? = null) {
                         sharpDialog.showOptions(
                             title = moreMenuTitle,
                             options = moreMenuOptions,
+                            // 不能自动关闭：3 号项要 push 子页面，
+                            // 若先 dismiss 再 push 会「关掉又打开」，中间闪一下。
+                            autoDismiss = false,
                         ) { index ->
                             when (index) {
-                                0 -> navController.navigate(Screen.Translator)
-                                1 -> navController.navigate(Screen.MediaCreationSessions)
-                                2 -> navController.navigate(Screen.ImageGen)
-                                3 -> {
-                                    // 图A-4：助手选择
-                                    sharpDialog.showOptions(
-                                        title = assistantMenuTitle,
-                                        options = assistantNames.map { name ->
-                                            SharpDialogOption(label = name, icon = HugeIcons.LookTop)
-                                        },
-                                    ) { assistantIndex ->
-                                        settings.assistants.getOrNull(assistantIndex)
-                                            ?.let(selectAssistant)
-                                    }
+                                0 -> {
+                                    sharpDialog.dismiss()
+                                    navController.navigate(Screen.Translator)
+                                }
+                                1 -> {
+                                    sharpDialog.dismiss()
+                                    navController.navigate(Screen.MediaCreationSessions)
+                                }
+                                2 -> {
+                                    sharpDialog.dismiss()
+                                    navController.navigate(Screen.ImageGen)
+                                }
+                                // 图A-4：助手选择 —— 必须是**子页面**，
+                                // 用 pushOptions 才会播「父页左滑出、子页右滑入」。
+                                // 用 showOptions 的话 show() 会把 nav 重置成 RESET，
+                                // 那条分支是 fadeIn togetherWith fadeOut → 看起来就是渐变。
+                                3 -> sharpDialog.pushOptions(
+                                    title = assistantMenuTitle,
+                                    options = assistantNames.map { name ->
+                                        SharpDialogOption(label = name, icon = HugeIcons.LookTop)
+                                    },
+                                ) { assistantIndex ->
+                                    settings.assistants.getOrNull(assistantIndex)
+                                        ?.let(selectAssistant)
                                 }
                             }
                         }

@@ -276,29 +276,66 @@ class SharpDialogController {
      * 选中即收起（先 dismiss 再回调），因此调用方在 onSelect 里直接
      * `navController.navigate(...)` 就能让「弹窗收起」与「页面滑入」**同步进行**。
      */
+    /** 构造「底部 2/3 弹窗 + 选项列表」的 spec。autoDismiss=false 时不自动关闭。 */
+    private fun optionsSpec(
+        title: String,
+        options: List<SharpDialogOption>,
+        subtitle: String?,
+        cancelText: String,
+        autoDismiss: Boolean,
+        onSelect: (Int) -> Unit,
+    ) = SharpDialogSpec(
+        title = title,
+        message = subtitle.orEmpty(),
+        placement = SharpDialogPlacement.Bottom,
+        content = {
+            SharpOptionsList(
+                options = options,
+                onSelect = { index ->
+                    if (autoDismiss) dismiss()
+                    onSelect(index)
+                },
+            )
+        },
+        buttons = listOf(SharpDialogButton(text = cancelText, primary = false)),
+    )
+
+    /**
+     * 打开**顶层**选项弹窗（nav = RESET，首次展开只淡入）。
+     *
+     * 若要打开**子页面**，必须用 [pushOptions] —— 那个才会播「父页左滑出、子页右滑入」。
+     */
     fun showOptions(
         title: String,
         options: List<SharpDialogOption>,
         subtitle: String? = null,
         cancelText: String = "取消",
+        autoDismiss: Boolean = true,
         onSelect: (Int) -> Unit,
     ) {
         show(
-            SharpDialogSpec(
-                title = title,
-                message = subtitle.orEmpty(),
-                placement = SharpDialogPlacement.Bottom,
-                content = {
-                    SharpOptionsList(
-                        options = options,
-                        onSelect = { index ->
-                            dismiss()
-                            onSelect(index)
-                        },
-                    )
-                },
-                buttons = listOf(SharpDialogButton(text = cancelText, primary = false)),
-            )
+            optionsSpec(title, options, subtitle, cancelText, autoDismiss, onSelect)
+        )
+    }
+
+    /**
+     * 打开**子页面**选项弹窗（nav = FORWARD）。
+     *
+     * 与 [showOptions] 的唯一差别是走 [push] 而非 [show]：
+     * push 会把当前页压栈并置 nav=FORWARD，宿主据此播滑动转场。
+     * 之前「切换助手」错用了 showOptions，show() 会把 nav 重置成 RESET，
+     * 而 RESET 分支是 `fadeIn togetherWith fadeOut` —— 所以子页看起来是渐变。
+     */
+    fun pushOptions(
+        title: String,
+        options: List<SharpDialogOption>,
+        subtitle: String? = null,
+        cancelText: String = "取消",
+        autoDismiss: Boolean = true,
+        onSelect: (Int) -> Unit,
+    ) {
+        push(
+            optionsSpec(title, options, subtitle, cancelText, autoDismiss, onSelect)
         )
     }
 
@@ -315,12 +352,14 @@ class SharpDialogController {
         options: List<String>,
         subtitle: String? = null,
         cancelText: String = "取消",
+        autoDismiss: Boolean = true,
         onSelect: (Int) -> Unit,
     ) = showOptions(
         title = title,
         options = options.map { SharpDialogOption(it) },
         subtitle = subtitle,
         cancelText = cancelText,
+        autoDismiss = autoDismiss,
         onSelect = onSelect,
     )
 
@@ -378,6 +417,15 @@ private enum class Phase { IDLE, OPENING, OPEN, CLOSING }
 @Composable
 private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
     var spec by remember { mutableStateOf<SharpDialogSpec?>(null) }
+    /**
+     * 与 [spec] **同步快照**的翻页方向。
+     *
+     * 为什么不直接在 transitionSpec 里读 controller.nav：
+     * nav 是一个独立的状态，可能在本页切换之后又被改写（如 dismiss 置 RESET），
+     * 那样转场判定就会拿到错的方向。这里在「设置 spec 的同一时刻」把 nav 抄下来，
+     * 保证方向永远与这次页面变化配对。
+     */
+    var pageNav by remember { mutableStateOf(SheetNav.RESET) }
     val scale = remember { Animatable(0f) }
     var closing by remember { mutableStateOf(false) }
     var phase by remember { mutableStateOf(Phase.IDLE) }
@@ -446,9 +494,13 @@ private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
         }
     }
 
-    // 内容更新：展示中切换内容不重播动画
+    // 内容更新：展示中切换内容不重播动画。
+    // 同时把本页的翻页方向快照下来（见 pageNav 的说明）。
     LaunchedEffect(requested) {
-        if (requested != null) spec = requested
+        if (requested != null) {
+            pageNav = controller.nav
+            spec = requested
+        }
     }
 
     // 每次打开都把滚动位置复位
@@ -571,7 +623,7 @@ private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
                     transitionSpec = {
                         val slide = tween<IntOffset>(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing)
                         val fade = tween<Float>(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing)
-                        when (controller.nav) {
+                        when (pageNav) {
                             SheetNav.FORWARD ->
                                 (slideInHorizontally(slide) { it } + fadeIn(fade)) togetherWith
                                     (slideOutHorizontally(slide) { -it } + fadeOut(fade))
