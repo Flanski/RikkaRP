@@ -96,7 +96,6 @@ import java.util.concurrent.TimeUnit
 fun SettingFilesPage(
     filesManager: FilesManager = koinInject(),
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val gridState = rememberLazyStaggeredGridState()
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
@@ -180,7 +179,6 @@ fun SettingFilesPage(
                 navigation = { BackButton() },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor
     ) { innerPadding ->
         val layoutDirection = LocalLayoutDirection.current

@@ -47,7 +47,6 @@ import org.koin.compose.koinInject
 
 @Composable
 fun SettingDonatePage() {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
         topBar = {
@@ -56,7 +55,6 @@ fun SettingDonatePage() {
                 navigation = { BackButton() },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor,
     ) { paddings ->
         Column(

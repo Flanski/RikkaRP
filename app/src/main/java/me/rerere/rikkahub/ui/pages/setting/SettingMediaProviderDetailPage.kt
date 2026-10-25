@@ -51,6 +51,9 @@ import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.FloppyDisk
 import me.rerere.hugeicons.stroke.Package01
 import me.rerere.hugeicons.stroke.Tools
+import me.rerere.rikkahub.ui.components.sharp.SharpTabs
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
@@ -86,6 +89,7 @@ fun SettingMediaProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
     val toaster = LocalToaster.current
     val context = LocalContext.current
     val pager = rememberPagerState { MediaProviderDetailTab.entries.size }
+    val scope = rememberCoroutineScope()
     // 草稿放在页面这一层，各分页共用，切换分页不会丢掉没保存的修改；点保存才写回设置
     var draft by remember { mutableStateOf(provider) }
     var expanded by rememberSaveable { mutableStateOf(true) }
@@ -144,11 +148,12 @@ fun SettingMediaProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                 .imePadding()
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                PagerTabs(
-                    pagerState = pager,
-                    tabs = MediaProviderDetailTab.entries,
+                                SharpTabs(
+                    labels = MediaProviderDetailTab.entries.map { it.label },
+                    icons = MediaProviderDetailTab.entries.map { it.icon },
+                    selectedIndex = pager.targetPage,
+                    onSelect = { index -> scope.launch { pager.animateScrollToPage(index) } },
                     modifier = Modifier.padding(vertical = 4.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
                 )
 
                 HorizontalPager(

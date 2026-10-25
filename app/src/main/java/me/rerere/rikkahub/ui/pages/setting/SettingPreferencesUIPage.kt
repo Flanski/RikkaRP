@@ -107,7 +107,6 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
         }
     }
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
         topBar = {
@@ -116,7 +115,6 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                 navigation = { BackButton() },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor
     ) { contentPadding ->
         LazyColumn(

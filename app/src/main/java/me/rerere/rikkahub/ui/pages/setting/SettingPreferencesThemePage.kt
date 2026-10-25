@@ -35,7 +35,6 @@ import org.koin.androidx.compose.koinViewModel
 fun SettingPreferencesThemePage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     var amoledDarkMode by rememberAmoledDarkMode()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val navController = LocalNavController.current
 
     Scaffold(
@@ -45,7 +44,6 @@ fun SettingPreferencesThemePage(vm: SettingVM = koinViewModel()) {
                 navigation = { BackButton() },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor
     ) { contentPadding ->
         LazyColumn(

@@ -68,7 +68,6 @@ import me.rerere.ui.easteregg.EmojiBurstHost
 
 @Composable
 fun SettingAboutPage() {
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val context = LocalContext.current
     val navController = LocalNavController.current
     val soundOptions = remember { listOf(R.raw.bingbingbing, R.raw.gangguan) }
@@ -103,11 +102,9 @@ fun SettingAboutPage() {
                 navigationIcon = {
                     BackButton()
                 },
-                scrollBehavior = scrollBehavior,
                 colors = CustomColors.topBarColors,
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor,
     ) { innerPadding ->
         EmojiBurstHost(

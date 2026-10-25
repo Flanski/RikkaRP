@@ -32,7 +32,6 @@ import me.rerere.rikkahub.utils.plus
 
 @Composable
 fun SettingPreferencesPage() {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val navController = LocalNavController.current
 
     Scaffold(
@@ -42,7 +41,6 @@ fun SettingPreferencesPage() {
                 navigation = { BackButton() },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor
     ) { contentPadding ->
         LazyColumn(

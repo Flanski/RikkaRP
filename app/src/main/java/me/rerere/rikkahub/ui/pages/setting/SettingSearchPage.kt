@@ -67,7 +67,6 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val lazyListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val nav = LocalNavController.current
@@ -81,7 +80,6 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
                 navigation = { BackButton() },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor
     ) {
         val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->

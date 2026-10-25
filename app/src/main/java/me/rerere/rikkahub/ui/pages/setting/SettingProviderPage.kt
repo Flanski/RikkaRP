@@ -104,7 +104,6 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var searchQuery by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<ProviderSetting?>(null) }
     val lazyListState = rememberLazyListState()
@@ -165,7 +164,6 @@ fun SettingProviderPage(vm: SettingVM = koinViewModel()) {
                 },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor,
     ) { innerPadding ->
         Column(

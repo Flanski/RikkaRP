@@ -75,6 +75,9 @@ import me.rerere.hugeicons.stroke.Settings03
 import me.rerere.hugeicons.stroke.Tools
 import me.rerere.hugeicons.stroke.View
 import me.rerere.hugeicons.stroke.ViewOff
+import me.rerere.rikkahub.ui.components.sharp.SharpTabs
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.ai.mcp.McpManager
 import me.rerere.rikkahub.data.ai.mcp.McpServerConfig
@@ -113,6 +116,7 @@ fun SettingMcpDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
     val navController = LocalNavController.current
     val config = settings.mcpServers.find { it.id == id } ?: return
     val pager = rememberPagerState { McpDetailTab.entries.size }
+    val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
     val context = LocalContext.current
     // 草稿放在页面这一层，切到工具页再切回来不会丢掉没保存的修改
@@ -196,11 +200,12 @@ fun SettingMcpDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                 .padding(it)
                 .consumeWindowInsets(it)
         ) {
-            PagerTabs(
-                pagerState = pager,
-                tabs = McpDetailTab.entries,
+                        SharpTabs(
+                labels = McpDetailTab.entries.map { it.label },
+                icons = McpDetailTab.entries.map { it.icon },
+                selectedIndex = pager.targetPage,
+                onSelect = { index -> scope.launch { pager.animateScrollToPage(index) } },
                 modifier = Modifier.padding(vertical = 4.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
             )
 
             HorizontalPager(

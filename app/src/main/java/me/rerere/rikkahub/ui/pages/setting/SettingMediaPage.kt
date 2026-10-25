@@ -57,6 +57,7 @@ import me.rerere.hugeicons.stroke.Delete01
 import me.rerere.hugeicons.stroke.Image02
 import me.rerere.mediagen.model.MediaKind
 import me.rerere.mediagen.provider.MediaGenerationProviderSetting
+import me.rerere.rikkahub.ui.components.sharp.SharpTabs
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
 import me.rerere.rikkahub.Screen
@@ -100,10 +101,10 @@ private enum class MediaTab(
 
 @Composable
 fun SettingMediaPage(vm: SettingVM = koinViewModel()) {
+    val scope = rememberCoroutineScope()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val navController = LocalNavController.current
     val pagerState = rememberPagerState { MediaTab.entries.size }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
         topBar = {
@@ -112,7 +113,6 @@ fun SettingMediaPage(vm: SettingVM = koinViewModel()) {
                 navigation = { BackButton() },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor,
     ) { innerPadding ->
         Column(
@@ -121,11 +121,12 @@ fun SettingMediaPage(vm: SettingVM = koinViewModel()) {
                 .padding(innerPadding)
                 .consumeWindowInsets(innerPadding)
         ) {
-            PagerTabs(
-                pagerState = pagerState,
-                tabs = MediaTab.entries,
+                        SharpTabs(
+                labels = MediaTab.entries.map { it.label },
+                icons = MediaTab.entries.map { it.icon },
+                selectedIndex = pagerState.targetPage,
+                onSelect = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
                 modifier = Modifier.padding(bottom = 4.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
             )
 
             HorizontalPager(

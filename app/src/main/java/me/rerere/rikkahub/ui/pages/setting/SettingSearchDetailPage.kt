@@ -71,7 +71,6 @@ fun SettingSearchDetailPage(
     vm: SettingVM = koinViewModel()
 ) {
     val settings by vm.settings.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val nav = LocalNavController.current
 
     val service = settings.searchServices.find { it.id == serviceId } ?: return
@@ -110,7 +109,6 @@ fun SettingSearchDetailPage(
                 },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor
     ) { padding ->
         LazyColumn(

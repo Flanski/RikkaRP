@@ -96,7 +96,6 @@ import org.koin.compose.koinInject
 
 @Composable
 fun SettingPage(vm: SettingVM = koinViewModel()) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val navController = LocalNavController.current
     val settings by vm.settings.collectAsStateWithLifecycle()
     val launchCount by vm.launchCount.collectAsStateWithLifecycle()
@@ -135,7 +134,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                 navigation = { BackButton() },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor
     ) { innerPadding ->
         LazyColumn(

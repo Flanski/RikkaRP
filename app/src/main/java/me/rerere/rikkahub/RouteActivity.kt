@@ -344,10 +344,11 @@ class RouteActivity : ComponentActivity() {
                                 slideOutHorizontally { it }
                         },
                         entryProvider = entryProvider {
-                            entry<Screen.Chat>(
-                                metadata = NavDisplay.transitionSpec { fadeIn() togetherWith fadeOut() }
-                                    + NavDisplay.popTransitionSpec { fadeIn() togetherWith fadeOut() }
-                            ) { key ->
+                            // RikkaRP: 上游原版把对话页设为淡入淡出（当时对话页是唯一的首屏，
+                            // 淡入无感）。改成多页后，从消息页进入对话页会变成「渐变」，
+                            // 与全局的滑动+缩放过渡不一致。这里去掉 metadata，
+                            // 让它走 NavDisplay 的 transitionSpec（滑入 + 旧页缩放淡出）。
+                            entry<Screen.Chat> { key ->
                                 ChatPage(
                                     id = Uuid.parse(key.id),
                                     text = key.text,

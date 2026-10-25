@@ -343,11 +343,6 @@ private fun SettingProviderConfigPage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .floatingToolbarVerticalNestedScroll(
-                    expanded = expanded,
-                    onExpand = { expanded = true },
-                    onCollapse = { expanded = false },
-                )
                 .verticalScroll(rememberScrollState())
                 // 底部留出悬浮工具栏的位置
                 .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 128.dp),
@@ -479,11 +474,7 @@ private fun ModelList(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .floatingToolbarVerticalNestedScroll(
-                        expanded = expanded,
-                        onExpand = { expanded = true },
-                        onCollapse = { expanded = false },
-                    ),
+,
                 contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 128.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -540,6 +531,7 @@ private fun ModelSettingsForm(
     isEdit: Boolean,
     parentProvider: ProviderSetting? = null
 ) {
+    val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState { ModelFormTab.entries.size }
 
     fun setModelId(id: String) {
@@ -558,9 +550,12 @@ private fun ModelSettingsForm(
     }
 
     Column {
-        PagerTabs(
-            pagerState = pagerState,
-            tabs = ModelFormTab.entries,
+                SharpTabs(
+            labels = ModelFormTab.entries.map { it.label },
+            icons = ModelFormTab.entries.map { it.icon },
+            selectedIndex = pagerState.targetPage,
+            onSelect = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
 
         HorizontalPager(

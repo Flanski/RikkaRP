@@ -65,7 +65,6 @@ fun SettingPreferencesNotificationPage(vm: SettingVM = koinViewModel()) {
         vm.updateSettings { it.copy(displaySetting = setting) }
     }
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val updateChecksEnabled =
         displaySetting.updateCheckDisabledUntilEpochMillis <= System.currentTimeMillis()
 
@@ -97,7 +96,6 @@ fun SettingPreferencesNotificationPage(vm: SettingVM = koinViewModel()) {
                 navigation = { BackButton() },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor
     ) { contentPadding ->
         LazyColumn(

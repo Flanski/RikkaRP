@@ -96,14 +96,14 @@ fun SwipeableRow(
                     Icon(
                         imageVector = action.icon,
                         contentDescription = action.label,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(16.dp),
                         tint = action.contentColor,
                     )
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(3.dp))
                     Text(
                         text = action.label,
                         color = action.contentColor,
-                        fontSize = 11.sp,
+                        fontSize = 10.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

@@ -33,6 +33,9 @@ import me.rerere.hugeicons.stroke.BubbleChat
 import me.rerere.hugeicons.stroke.ScanText
 import me.rerere.hugeicons.stroke.Translate
 import me.rerere.hugeicons.stroke.Zap
+import me.rerere.rikkahub.ui.components.sharp.SharpTabs
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
 import me.rerere.rikkahub.data.datastore.Settings
@@ -65,8 +68,8 @@ private enum class ModelSettingTab(
 @Composable
 fun SettingModelPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val pagerState = rememberPagerState { ModelSettingTab.entries.size }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         containerColor = CustomColors.topBarColors.containerColor,
@@ -76,18 +79,18 @@ fun SettingModelPage(vm: SettingVM = koinViewModel()) {
                 navigation = { BackButton() },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = innerPadding.calculateTopPadding())
         ) {
-            PagerTabs(
-                pagerState = pagerState,
-                tabs = ModelSettingTab.entries,
+                        SharpTabs(
+                labels = ModelSettingTab.entries.map { it.label },
+                icons = ModelSettingTab.entries.map { it.icon },
+                selectedIndex = pagerState.targetPage,
+                onSelect = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
                 modifier = Modifier.padding(bottom = 4.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
             )
 
             // 导航条的位置留在列表的内边距里，内容可以滚到它下面

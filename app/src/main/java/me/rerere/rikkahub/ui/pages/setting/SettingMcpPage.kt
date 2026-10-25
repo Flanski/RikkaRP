@@ -93,7 +93,6 @@ fun SettingMcpPage(vm: SettingVM = koinViewModel()) {
     val mcpConfigs = settings.mcpServers
     val navController = LocalNavController.current
     var showImportDialog by remember { mutableStateOf(false) }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
         topBar = {
                         SharpTopBar(
@@ -101,7 +100,6 @@ fun SettingMcpPage(vm: SettingVM = koinViewModel()) {
                 navigation = { BackButton() },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor
     ) { innerPadding ->
         val mcpManager = koinInject<McpManager>()

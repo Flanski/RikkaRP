@@ -50,7 +50,6 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
         vm.updateSettings { it.copy(displaySetting = setting) }
     }
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
         topBar = {
@@ -59,7 +58,6 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                 navigation = { BackButton() },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor
     ) { contentPadding ->
         LazyColumn(

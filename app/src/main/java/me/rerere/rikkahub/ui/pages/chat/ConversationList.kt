@@ -13,6 +13,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
@@ -317,8 +318,11 @@ private fun ConversationItem(
             .background(backgroundColor),
     ) {
         Row(
+            // RikkaRP: 行高固定下限 48dp —— 左滑菜单的内容（图标+文字，约 33dp 高）
+            // 需要完整落在行内，否则会被 matchParentSize 的约束上下裁切。
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(min = 48.dp)
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

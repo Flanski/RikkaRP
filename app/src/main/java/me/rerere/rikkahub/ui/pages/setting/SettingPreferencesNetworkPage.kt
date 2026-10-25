@@ -88,7 +88,6 @@ fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
     var proxyDialogVisible by remember { mutableStateOf(false) }
     val defaultUserAgent = "RikkaHub-Android/${BuildConfig.VERSION_NAME}"
     val proxyUrlInvalid = proxyUrlDraft.isNotBlank() && proxyUrlDraft.toProxyOrNull() == null
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val scope = rememberCoroutineScope()
     val resources = LocalResources.current
     val toaster = LocalToaster.current
@@ -265,7 +264,6 @@ fun SettingPreferencesNetworkPage(vm: SettingVM = koinViewModel()) {
                 navigation = { BackButton() },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor,
     ) { contentPadding ->
         LazyColumn(

@@ -96,7 +96,6 @@ private val themeJson = Json {
 @Composable
 fun SettingThemePage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val clipboardManager = LocalClipboard.current
     val toaster = LocalToaster.current
     val scope = rememberCoroutineScope()
@@ -115,7 +114,6 @@ fun SettingThemePage(vm: SettingVM = koinViewModel()) {
                 navigation = { BackButton() },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor
     ) { innerPadding ->
         LazyColumn(

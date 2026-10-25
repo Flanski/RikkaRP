@@ -74,7 +74,6 @@ fun SettingWebPage() {
     val settingsStore: SettingsStore = koinInject()
     val settings = LocalSettings.current
     val serverState by webServerManager.state.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
@@ -185,7 +184,6 @@ fun SettingWebPage() {
                 },
             )
         },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor,
     ) { innerPadding ->
         LazyColumn(
