@@ -62,6 +62,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import me.rerere.rikkahub.ui.components.sharp.SharpDialogOption
+import me.rerere.hugeicons.stroke.LanguageCircle
+import me.rerere.hugeicons.stroke.ImageToVideo
 import me.rerere.hugeicons.stroke.MessageAdd01
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -219,12 +222,25 @@ fun MessagesPage(currentId: Uuid? = null) {
     // ≡ 弹窗用到的文案与列表必须在这里（composable 上下文）预先求值 ——
     // SharpIconButton 的 onClick 是普通 lambda，里面不能调用 stringResource。
     val moreMenuTitle = stringResource(R.string.chat_page_more_actions)
+    // 带图标：SharpDialogOption 会在文字**左侧**渲染图标
     val moreMenuOptions = listOf(
-        stringResource(R.string.chat_page_menu_ai_translator),
-        stringResource(R.string.media_creation_title),
-        stringResource(R.string.chat_page_menu_image_generation),
+        SharpDialogOption(
+            label = stringResource(R.string.chat_page_menu_ai_translator),
+            icon = HugeIcons.LanguageCircle,
+        ),
+        SharpDialogOption(
+            label = stringResource(R.string.media_creation_title),
+            icon = HugeIcons.ImageToVideo,
+        ),
+        SharpDialogOption(
+            label = stringResource(R.string.chat_page_menu_image_generation),
+            icon = HugeIcons.Image02,
+        ),
         // 图A-4：助手选择
-        stringResource(R.string.chat_page_switch_assistant),
+        SharpDialogOption(
+            label = stringResource(R.string.chat_page_switch_assistant),
+            icon = HugeIcons.LookTop,
+        ),
     )
     val assistantMenuTitle = stringResource(R.string.assistant_page_title)
     val assistantNames = settings.assistants.map { it.name.ifEmpty { defaultAssistantName } }
@@ -354,7 +370,9 @@ fun MessagesPage(currentId: Uuid? = null) {
                                     // 图A-4：助手选择
                                     sharpDialog.showOptions(
                                         title = assistantMenuTitle,
-                                        options = assistantNames,
+                                        options = assistantNames.map { name ->
+                                            SharpDialogOption(label = name, icon = HugeIcons.LookTop)
+                                        },
                                     ) { assistantIndex ->
                                         settings.assistants.getOrNull(assistantIndex)
                                             ?.let(selectAssistant)

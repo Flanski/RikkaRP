@@ -12,6 +12,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -74,12 +75,12 @@ internal fun AsrButton(
     }
     val containerColor by animateColorAsState(
         targetValue = targetContainerColor,
-        animationSpec = tween(300),
+        animationSpec = tween(SharpMotion.LinearMs, easing = SharpMotion.easing),
         label = "asr_container"
     )
     val contentColor by animateColorAsState(
         targetValue = targetContentColor,
-        animationSpec = tween(300),
+        animationSpec = tween(SharpMotion.LinearMs, easing = SharpMotion.easing),
         label = "asr_content"
     )
 

@@ -1,9 +1,15 @@
 package me.rerere.rikkahub.ui.components.sharp
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
@@ -21,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,6 +35,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -45,35 +53,37 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.rerere.rikkahub.ui.theme.sharp.SharpColors
 import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import kotlin.math.pow
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
 /*
  * ============================================================================
- * SharpUI 弹窗系统 —— 完整移植自 com.sharpui.widgets.dialog
+ * SharpUI 弹窗系统 —— 移植自 com.sharpui.widgets.dialog
+ *                      + Litchi(Cyrene) ui/notification/Notification.kt 的经验
  *
- * 移植原则：**颜色、层级、动效一律不改**。
- *   · 遮罩 rgba(0,0,0,.5)，主体恒为主体蓝 #409EFF
- *   · 头部按类型着色：normal 蓝 / warning 橙（**黑字**）/ error 红（白字）
- *   · 展开：scaleY 0 → 1.06（250ms，cubic-bezier(0.4,0,0.2,1)）
- *           再用低阻尼弹簧 (0.20 / 2000) 回到 1.0 → 落定时震荡几下
- *   · 收起：先反向放大到 1.06 再收到 0；底部形态的底边收得更快（指数 1.6 / 0.7）
- *   · 三种形态（居中 1/3、底部 2/3、全屏）共用同一套动画，都以**自身中心**为原点
+ * 颜色、层级、动效一律照搬，未做任何改动：
+ *   遮罩 rgba(0,0,0,.5) / 主体 #409EFF / warning 橙底黑字 / error 红底白字
+ *   展开 scaleY 0 -> 1.06 (250ms cubic-bezier(0.4,0,0.2,1)) 再低阻尼弹簧(0.20/2000) 回 1.0
+ * 三种形态（居中 1/3、底部 2/3、全屏）共用同一套动画，都以自身中心为原点。
  *
- * 与原版的实现差异（不影响观感）：
- *   · 文字直接用 Material3 Text + 显式颜色/字号（等价于原版 SharpText）
- *   · 底部按钮在本文件内实现（等价于原版 SharpButtonStyle.Inverse / InverseGhost +
- *     SharpButtonSize.Small），因为项目的 SharpButton 没有尺寸参数
+ * 本版新增（本轮修复）：
+ *   1. 底部/全屏形态给按钮区加 navigationBarsPadding() —— 原先被三大金刚键压住
+ *   2. 弹窗内**子页**切换动画（push/pop + SheetNav 方向）—— 原先无过渡
+ *   3. 选项可带图标（SharpDialogOption）
+ *   4. 开合信号走 Channel 队列，**动画一定完整播完**，不会被新信号打断而抽搐
  * ============================================================================
  */
 
@@ -90,7 +100,7 @@ enum class SharpDialogType {
 }
 
 /**
- * 弹窗形态。三者的**动画完全一致**（同样的时长、曲线、震荡），只有高度与位置不同。
+ * 弹窗形态。三者的**动画完全一致**，只有高度与位置不同。
  */
 enum class SharpDialogPlacement {
     /** 居中弹窗：高度为屏幕的 1/3 */
@@ -107,12 +117,22 @@ enum class SharpDialogPlacement {
  * 弹窗底部按钮。
  *
  * [primary] = true 时是「主按钮」（白底蓝字）；
- * false 时是「次要按钮」（半透明白底 + 白字），对应 Demo 里的 .btn-retry。
+ * false 时是「次要按钮」（半透明白底 + 白字）。
  */
 class SharpDialogButton(
     val text: String,
     val primary: Boolean = true,
     val onClick: (() -> Unit)? = null,
+)
+
+/**
+ * 弹窗列表里的一个选项。
+ *
+ * [icon] 非空时会在文字**左侧**显示图标（本轮新增能力）。
+ */
+class SharpDialogOption(
+    val label: String,
+    val icon: ImageVector? = null,
 )
 
 /** 一次弹窗的完整描述。 */
@@ -128,21 +148,64 @@ class SharpDialogSpec(
 )
 
 /**
+ * 弹窗页面的切换方向。
+ *
+ * 宿主据此决定滑动方向 —— 「进入子页」与「返回父页」方向相反，
+ * 必须在切换**当时**记录，事后无法推断。
+ */
+enum class SheetNav { RESET, FORWARD, BACK }
+
+/**
  * 弹窗的统一入口。
  *
- * 全库只使用这一个弹窗实现（动画、层级、配色完全一致），
- * 各页面通过 [LocalSharpDialog] 或直接持有本控制器来弹出。
+ * 全库只使用这一个弹窗实现（动画、层级、配色完全一致）。
  */
+@Stable
 class SharpDialogController {
 
     var current: SharpDialogSpec? by mutableStateOf(null)
         private set
 
+    /** 最近一次页面切换方向（供宿主决定滑动方向） */
+    internal var nav: SheetNav by mutableStateOf(SheetNav.RESET)
+        private set
+
+    /** 页面栈：只装被推进去的父页面，栈顶是当前页的直接父页。 */
+    private val backStack = mutableListOf<SharpDialogSpec>()
+
+    /** 打开弹窗（作为顶层页面），会清空页面栈。 */
     fun show(spec: SharpDialogSpec) {
+        backStack.clear()
+        nav = SheetNav.RESET
         current = spec
     }
 
+    /**
+     * 进入**子页面**：当前页压栈，新页成为当前页。
+     * 宿主会播「父页向左滑出、子页自右滑入」。
+     */
+    fun push(spec: SharpDialogSpec) {
+        current?.let { backStack.add(it) }
+        nav = SheetNav.FORWARD
+        current = spec
+    }
+
+    /** 返回上一级；返回 false 表示已在顶层。 */
+    fun pop(): Boolean {
+        val previous = backStack.removeLastOrNull() ?: return false
+        nav = SheetNav.BACK
+        current = previous
+        return true
+    }
+
+    /** 「返回」统一入口：有上一级就回去，没有就关闭。 */
+    fun back() {
+        if (!pop()) dismiss()
+    }
+
     fun dismiss() {
+        nav = SheetNav.RESET
+        backStack.clear()
         current = null
     }
 
@@ -184,7 +247,7 @@ class SharpDialogController {
         )
     }
 
-    /** 错误通知：Demo 里错误类型带「重试 + 确定」两个按钮。 */
+    /** 错误通知：带「重试 + 确定」两个按钮。 */
     fun error(
         title: String,
         message: String = "",
@@ -211,12 +274,12 @@ class SharpDialogController {
     /**
      * 以「底部 2/3 弹窗 + 选项列表」的形式展示一组子选项。
      *
-     * 供列表项右侧带向下箭头（表示含有隐藏子选项）时使用，
-     * 保证子选项统一使用标准的 2/3 弹窗，而不是各页自行拼一套。
+     * 选中即收起（先 dismiss 再回调），因此调用方在 onSelect 里直接
+     * `navController.navigate(...)` 就能让「弹窗收起」与「页面滑入」**同步进行**。
      */
     fun showOptions(
         title: String,
-        options: List<String>,
+        options: List<SharpDialogOption>,
         subtitle: String? = null,
         cancelText: String = "取消",
         onSelect: (Int) -> Unit,
@@ -239,6 +302,21 @@ class SharpDialogController {
             )
         )
     }
+
+    /** 纯文本选项的重载（无图标）。 */
+    fun showOptions(
+        title: String,
+        options: List<String>,
+        subtitle: String? = null,
+        cancelText: String = "取消",
+        onSelect: (Int) -> Unit,
+    ) = showOptions(
+        title = title,
+        options = options.map { SharpDialogOption(it) },
+        subtitle = subtitle,
+        cancelText = cancelText,
+        onSelect = onSelect,
+    )
 
     /** 确认框：次要按钮 + 主按钮。 */
     fun confirm(
@@ -272,10 +350,7 @@ val LocalSharpDialog = staticCompositionLocalOf<SharpDialogController> {
 }
 
 /**
- * 统一弹窗宿主。
- *
- * 在应用根部包裹一次即可，之后**任何页面**都通过 [LocalSharpDialog] 弹窗；
- * 居中 / 底部 / 全屏三种形态共用同一套动画、层级与配色。
+ * 统一弹窗宿主。在应用根部包裹一次即可。
  */
 @Composable
 fun SharpDialogHost(
@@ -291,12 +366,15 @@ fun SharpDialogHost(
     }
 }
 
+/** 弹窗动画阶段。用于让动画**顺序**播放，不被新信号打断。 */
+private enum class Phase { IDLE, OPENING, OPEN, CLOSING }
+
 @Composable
 private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
     var spec by remember { mutableStateOf<SharpDialogSpec?>(null) }
     val scale = remember { Animatable(0f) }
-    // 是否处于收起阶段（收起时底部弹窗的底边要收得更快）
     var closing by remember { mutableStateOf(false) }
+    var phase by remember { mutableStateOf(Phase.IDLE) }
 
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
@@ -309,6 +387,59 @@ private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
 
     val requested = controller.current
     val open = requested != null
+
+    /**
+     * 开合请求队列。
+     *
+     * 为什么不用 `LaunchedEffect(open)` 直接驱动动画：key 一变会**取消**正在跑的协程，
+     * 于是「展开到一半收到关闭信号」会让动画从半路折返，视觉上抽搐一下。
+     * 队列 + 单消费者保证 `animateTo` 一定跑完，期间的信号排队等待。
+     */
+    val requests = remember { Channel<Boolean>(Channel.UNLIMITED) }
+    LaunchedEffect(open) { requests.send(open) }
+
+    LaunchedEffect(Unit) {
+        for (wantOpen in requests) {
+            if (wantOpen) {
+                if (phase == Phase.OPEN) continue
+                phase = Phase.OPENING
+                // 1) 按 Demo 曲线展开到过冲峰值
+                scale.animateTo(
+                    SharpMotion.DialogPeak,
+                    tween(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing),
+                )
+                // 2) 到达后震荡几下
+                scale.animateTo(
+                    1f,
+                    spring(
+                        SharpMotion.DampingRatio,
+                        SharpMotion.Stiffness,
+                        visibilityThreshold = SharpMotion.VisibilityThreshold,
+                    ),
+                )
+                phase = Phase.OPEN
+            } else {
+                if (phase == Phase.IDLE) continue
+                phase = Phase.CLOSING
+                closing = true
+                // 已完全展开时先反向放大一点再收（与 Demo 一致）
+                if (scale.value >= 1f) {
+                    scale.animateTo(
+                        SharpMotion.DialogPeak,
+                        tween(SharpMotion.PressMs, easing = SharpMotion.easing),
+                    )
+                }
+                scale.animateTo(
+                    0f,
+                    tween(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing),
+                )
+                // 动画播完才停止渲染 —— 用户能看到完整收起过程
+                spec = null
+                closing = false
+                phase = Phase.IDLE
+            }
+        }
+    }
 
     // 内容更新：展示中切换内容不重播动画
     LaunchedEffect(requested) {
@@ -324,12 +455,10 @@ private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
     }
 
     /**
-     * 越界量只在 onPostScroll 里累加。三点约束：
-     * 1. 内容不可滚动时不响应（maxValue == 0 说明没有可滚区域）；
-     * 2. 符号：顶部继续下拉时 available.y 为正、底部继续上拉时为负，
-     *    因此 translationY = +overscroll 才能得到「顶部下拉 → 弹窗下移」；
-     * 3. 回弹不在 onPostScroll 里做（它不是挂起函数），
-     *    改由 ScrollState.isScrollInProgress 的监听在滚动结束后统一弹回。
+     * 越界量只在 onPostScroll 里累加：
+     * 1. 内容不可滚动时不响应（maxValue == 0）；
+     * 2. 顶部继续下拉时 available.y 为正，故 translationY = +overscroll 才能下移；
+     * 3. 回弹不在 onPostScroll 里做（非挂起函数），由 isScrollInProgress 监听统一弹回。
      */
     val overscrollConnection = remember(maxOverscrollPx) {
         object : NestedScrollConnection {
@@ -349,7 +478,7 @@ private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
         }
     }
 
-    // 手势 / 惯性结束 → 复位。刻意用减速补间而不是弹簧：弹簧会过冲产生抖动。
+    // 手势 / 惯性结束 → 复位。刻意用减速补间而非弹簧：弹簧会过冲抖动。
     LaunchedEffect(scrollState.isScrollInProgress) {
         if (!scrollState.isScrollInProgress && overscroll.value != 0f) {
             overscrollJob?.cancel()
@@ -362,53 +491,6 @@ private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
                     ),
                 ) { overscroll.value = this.value }
             }
-        }
-    }
-
-    // 展开 / 收起。以 open 为 key：展开期间被关闭会立即取消展开动画并转入收起。
-    LaunchedEffect(open) {
-        if (open) {
-            closing = false
-            scale.snapTo(0f)
-            // 1) 按 Demo 曲线展开到过冲峰值
-            scale.animateTo(
-                targetValue = SharpMotion.DialogPeak,
-                animationSpec = tween(
-                    durationMillis = SharpMotion.DialogMs,
-                    easing = SharpMotion.dialogEasing,
-                ),
-            )
-            // 2) 到达后震荡几下
-            scale.animateTo(
-                targetValue = 1f,
-                animationSpec = spring(
-                    dampingRatio = SharpMotion.DampingRatio,
-                    stiffness = SharpMotion.Stiffness,
-                    visibilityThreshold = SharpMotion.VisibilityThreshold,
-                ),
-            )
-        } else {
-            closing = true
-            // 只有「已经完全展开」时才先展开一点再收起；
-            // 若展开尚未完成就收到关闭指令，则直接反向收回去。
-            if (scale.value >= 1f) {
-                scale.animateTo(
-                    targetValue = SharpMotion.DialogPeak,
-                    animationSpec = tween(
-                        durationMillis = SharpMotion.PressMs,
-                        easing = SharpMotion.easing,
-                    ),
-                )
-            }
-            scale.animateTo(
-                targetValue = 0f,
-                animationSpec = tween(
-                    durationMillis = SharpMotion.DialogMs,
-                    easing = SharpMotion.dialogEasing,
-                ),
-            )
-            spec = null
-            closing = false
         }
     }
 
@@ -467,25 +549,52 @@ private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
                         translationY = overscroll.value
                     }
                     alpha = v
-                    // 三种形态都以自身中心为原点，展开过程才与 1/3 弹窗一致
                     transformOrigin = TransformOrigin.Center
                 }
                 .background(SharpColors.DialogNormal)
                 // 吃掉落在弹窗体上的点击，避免穿透到遮罩把弹窗关掉
                 .pointerInput(Unit) {
-                    detectTapGestures { /* 仅用于拦截，不产生行为 */ }
+                    detectTapGestures { /* 仅用于拦截 */ }
                 },
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 DialogHeader(current)
-                // weight 属于 ColumnScope，只能由调用处求值后再传入
-                DialogBody(
-                    spec = current,
-                    scrollState = scrollState,
-                    nestedScrollConnection = overscrollConnection,
+
+                // —— 弹窗内子页切换：父页向左滑出、子页自右滑入 ——
+                AnimatedContent(
+                    targetState = current,
+                    transitionSpec = {
+                        val slide = tween<IntOffset>(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing)
+                        val fade = tween<Float>(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing)
+                        when (controller.nav) {
+                            SheetNav.FORWARD ->
+                                (slideInHorizontally(slide) { it } + fadeIn(fade)) togetherWith
+                                    (slideOutHorizontally(slide) { -it } + fadeOut(fade))
+
+                            SheetNav.BACK ->
+                                (slideInHorizontally(slide) { -it } + fadeIn(fade)) togetherWith
+                                    (slideOutHorizontally(slide) { it } + fadeOut(fade))
+
+                            // 首次打开只淡入 —— 展开动画由 scale 负责，这里再做位移会重复
+                            SheetNav.RESET -> fadeIn(fade) togetherWith fadeOut(fade)
+                        }
+                    },
+                    label = "sharpSheetPage",
                     modifier = Modifier.weight(1f),
+                ) { page ->
+                    DialogBody(
+                        spec = page,
+                        scrollState = scrollState,
+                        nestedScrollConnection = overscrollConnection,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+
+                DialogFooter(
+                    spec = current,
+                    isBottomSheet = isBottomSheet,
+                    onDismiss = { controller.dismiss() },
                 )
-                DialogFooter(current, onDismiss = { controller.dismiss() })
             }
         }
     }
@@ -554,7 +663,11 @@ private fun DialogBody(
 }
 
 @Composable
-private fun DialogFooter(spec: SharpDialogSpec, onDismiss: () -> Unit) {
+private fun DialogFooter(
+    spec: SharpDialogSpec,
+    isBottomSheet: Boolean,
+    onDismiss: () -> Unit,
+) {
     val buttons = spec.buttons.ifEmpty {
         listOf(SharpDialogButton(text = "确定", primary = true))
     }
@@ -563,6 +676,13 @@ private fun DialogFooter(spec: SharpDialogSpec, onDismiss: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .background(SharpColors.DialogNormal)
+            // 底部形态/全屏形态贴到屏幕底边，必须避让系统导航栏（三大金刚键/手势条），
+            // 否则按钮会被压在导航栏下面点不到。
+            .then(if (isBottomSheet || spec.placement == SharpDialogPlacement.Full) {
+                Modifier.navigationBarsPadding()
+            } else {
+                Modifier
+            })
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
         verticalAlignment = Alignment.CenterVertically,
@@ -709,29 +829,39 @@ private fun SharpDialogIcon(type: SharpDialogType, color: Color) {
 /**
  * 弹窗内的子选项列表（直角、白色分隔线）。
  *
- * 单独放在这里，是为了让「列表项 → 2/3 弹窗显示子选项」这条链路
- * 有统一的实现，不需要每个页面各写一遍。
+ * 选项可带图标：图标显示在文字**左侧**（本轮新增）。
  */
 @Composable
 internal fun SharpOptionsList(
-    options: List<String>,
+    options: List<SharpDialogOption>,
     onSelect: (Int) -> Unit,
 ) {
     Column {
-        options.forEachIndexed { index, label ->
+        options.forEachIndexed { index, option ->
             if (index > 0) {
                 SharpDivider(color = SharpColors.White30)
             }
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .pointerInput(index) {
                         detectTapGestures { onSelect(index) }
                     }
                     .padding(vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
+                val icon = option.icon
+                if (icon != null) {
+                    androidx.compose.material3.Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = SharpColors.White,
+                    )
+                    Spacer(Modifier.width(12.dp))
+                }
                 androidx.compose.material3.Text(
-                    text = label,
+                    text = option.label,
                     color = SharpColors.White,
                     fontSize = 15.sp,
                 )

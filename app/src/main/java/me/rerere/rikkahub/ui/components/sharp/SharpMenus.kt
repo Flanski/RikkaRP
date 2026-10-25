@@ -5,15 +5,12 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +20,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -41,9 +39,6 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.scale
@@ -78,7 +73,7 @@ import kotlin.math.sqrt
 /* ================================================================== */
 
 internal object ButtonMenuLogic {
-    /** 垂直滑动的角度上限（相对垂直轴，正反两侧）。|dx| = |dy| 恰好 45°。 */
+    /** 垂直滑动的角度上限：|dx| = |dy| 恰好 45°。 */
     const val ANGLE_LIMIT_DEG = 45f
 
     enum class Direction { NONE, VERTICAL, HORIZONTAL }
@@ -109,49 +104,53 @@ internal object ButtonMenuLogic {
 
     fun indexAtY(y: Float, rowPx: Float, scrollIndex: Float, itemCount: Int): Int {
         if (itemCount <= 0 || rowPx <= 0f) return -1
-        val raw = scrollIndex + y / rowPx
-        return resolveIndex(raw, itemCount)
+        return resolveIndex(scrollIndex + y / rowPx, itemCount)
     }
 }
 
 /* ================================================================== */
-/* 按钮选单（文本型）                                                  */
+/* 按钮选单（严格移植 SharpUI SharpButtonMenu）                        */
 /* ================================================================== */
 
-/** 按钮按下缩放 0.8（缩小 20%），与 SharpUI 原版一致。 */
+/** 按下时缩小的比例：变为 0.8（即缩小 20%），与 SharpUI 原版一致。 */
 private const val ButtonMenuPressScale = 0.8f
+
+/** 选单中央（选中项）的字号 —— 比其它行略大。 */
 private val DialCenterFontSize = 18.sp
+
+/** 选单其它行的字号。 */
 private val DialRowFontSize = 14.sp
+
+/** 选单左右留白：文字不贴边、不横向溢出。 */
 private val DialPadding = 14.dp
 
 /**
  * SharpUI 按钮选单（文本型）。
  *
- * ## 形态
+ * ## 外观（严格照搬 SharpUI）
  *
- * 触发控件是**紧凑按钮**：当前值 + 下箭头，1dp 直角边框，高 36dp，宽度随内容自适应。
- * 因此可以直接放在列表行的右侧（`Row { 标题; Spacer(weight); SharpButtonMenu(...) }`）。
+ * **无边框**，内容居中，按下时**缩小到 80%**，抬起恢复。
+ * 当前值文字直接作为按钮内容 —— 不是 combo box（没有边框、没有下拉箭头）。
  *
- * ## 为什么选单用 Popup
+ * ## 三种操作逻辑（SharpUI 原版定义）
  *
- * SharpUI 原版把表盘直接画在控件自身区域内，控件默认高 150dp 才能容下 5 行 ——
- * 放在表单里等于**常驻占掉三行高度**（用户描述的「非悬浮选单大量占用屏幕高度空间」）。
+ * | 逻辑 | 操作 | 行为 |
+ * |---|---|---|
+ * | ① | 点击按钮 | **立即弹出选单**；在里面选择后应用并收起 |
+ * | ② | 在按钮上**按住上下滑动** | 按钮上的值跟手变化，**抬手即应用** |
+ * | ③ | 手势范围与方向 | 只响应控件自身区域；**不响应水平滑动**；垂直轨迹最多 ±45° |
  *
- * 这里保留原版的**表盘交互**（竖向滚动、中央高亮带、只画完整落框的行、
- * 展开时 scaleY 先过冲到 1.06 再回弹），但把表盘放进 [Popup]：
- * 独立窗口，不参与父布局测量，展开/收起都不会让下方内容位移。
+ * ## 选单为悬浮层
  *
- * ## 交互（与原版一致）
+ * 表盘放在 [Popup] 里 —— 独立窗口，**不参与父布局测量**，
+ * 展开/收起都不会让下方内容位移，也不会常驻占用高度。
  *
- * | 操作 | 行为 |
- * |---|---|
- * | 点按钮 | 展开表盘 |
- * | 在表盘上竖向滑动 | 跟手滚动，抬手即应用中央项并收起 |
- * | 直接点表盘某一行 | 选中该行并收起 |
- * | 水平滑动 | 不响应（\|dx\| ≤ \|dy\| 才视为垂直） |
+ * 选单绘制严格照搬原版：竖向滚动、中央高亮带（alpha 0.22）、
+ * 只画**完整落在框内**的行、展开时 `scaleY` 从 0 过冲到 1.06 再回弹。
  *
+ * @param height 按钮高度
  * @param menuHeight 表盘高度
- * @param rowHeight 每行高度
+ * @param rowHeight 表盘每行高度
  */
 @Composable
 fun <T> SharpButtonMenu(
@@ -161,81 +160,164 @@ fun <T> SharpButtonMenu(
     label: @Composable (T) -> String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    menuHeight: Dp = 150.dp,
+    height: Dp = 36.dp,
+    menuHeight: Dp = 168.dp,
     rowHeight: Dp = 28.dp,
 ) {
     var expanded by remember { mutableStateOf(false) }
     var anchorHeightPx by remember { mutableIntStateOf(0) }
     var anchorWidthPx by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
-    val interaction = remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
-    val press = remember { Animatable(1f) }
-
-    LaunchedEffect(pressed) {
-        if (pressed) {
-            press.animateTo(ButtonMenuPressScale, tween(SharpMotion.PressMs, easing = SharpMotion.easing))
-        } else {
-            press.animateTo(1f, spring(SharpMotion.DampingRatio, SharpMotion.Stiffness))
-        }
-    }
 
     // 文字在 composable 上下文求值后传进表盘（表盘内部是 Canvas 绘制）
     val labels = options.map { label(it) }
     val selectedIndex = options.indexOf(selected).coerceAtLeast(0)
 
+    val press = remember { Animatable(1f) }
+    var pressed by remember { mutableStateOf(false) }
+
+    // 逻辑 ② 的临时索引：按住滑动时按钮上的值跟手变化
+    var dragIndex by remember { mutableFloatStateOf(selectedIndex.toFloat()) }
+    var dragging by remember { mutableStateOf(false) }
+
+    val rowPx = with(density) { rowHeight.toPx() }
+    val currentOnSelect by rememberUpdatedState(onSelect)
+
+    LaunchedEffect(pressed, dragging) {
+        if (pressed || dragging) {
+            press.animateTo(
+                ButtonMenuPressScale,
+                tween(SharpMotion.PressMs, easing = SharpMotion.easing),
+            )
+        } else {
+            press.animateTo(1f, spring(SharpMotion.DampingRatio, SharpMotion.Stiffness))
+        }
+    }
+
+    // 外部改值时同步
+    LaunchedEffect(selectedIndex) {
+        if (!dragging) dragIndex = selectedIndex.toFloat()
+    }
+
+    val displayIndex = when {
+        dragging -> ButtonMenuLogic.resolveIndex(dragIndex, labels.size)
+        else -> selectedIndex
+    }
+
     Box(modifier = modifier) {
-        // ---- 触发按钮 ----
-        Row(
+        // ---------------- 按钮本体（无边框、内容居中） ----------------
+        Box(
             modifier = Modifier
+                // 不能用 fillMaxWidth：本控件常放在 Row 的右侧（标题 + Spacer(weight) + 选单），
+                // fillMaxWidth 会先占满整行，把标题挤掉。这里按内容宽度收敛。
+                .widthIn(min = 96.dp)
+                .height(height)
                 .onSizeChanged {
                     anchorWidthPx = it.width
                     anchorHeightPx = it.height
                 }
                 .graphicsLayer { scaleX = press.value; scaleY = press.value }
-                .heightIn(min = 36.dp)
-                .background(MaterialTheme.colorScheme.surface)
-                .border(SharpDimens.border, MaterialTheme.colorScheme.outlineVariant)
-                .clickable(
-                    interactionSource = interaction,
-                    indication = null,
-                    enabled = enabled,
-                ) { expanded = true }
-                .padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                .pointerInput(enabled, rowPx, labels.size) {
+                    if (!enabled || labels.isEmpty()) return@pointerInput
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        pressed = true
+
+                        var dir = ButtonMenuLogic.Direction.NONE
+                        var accDx = 0f
+                        var accDy = 0f
+                        val slop = viewConfiguration.touchSlop
+                        // 从当前选中项开始滑
+                        dragIndex = selectedIndex.toFloat()
+
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            if (!change.pressed) break
+
+                            val dx = change.position.x - change.previousPosition.x
+                            val dy = change.position.y - change.previousPosition.y
+                            if (dx == 0f && dy == 0f) continue
+
+                            accDx += dx
+                            accDy += dy
+
+                            if (dir == ButtonMenuLogic.Direction.NONE) {
+                                dir = ButtonMenuLogic.direction(accDx, accDy, slop)
+                                if (dir == ButtonMenuLogic.Direction.VERTICAL) {
+                                    dragging = true
+                                }
+                            }
+
+                            if (dir == ButtonMenuLogic.Direction.VERTICAL) {
+                                change.consume()
+                                // 向上拖 → 索引增大（与表盘同向）
+                                dragIndex = ButtonMenuLogic.clampScroll(
+                                    dragIndex - dy / rowPx,
+                                    labels.size,
+                                )
+                            }
+                            // HORIZONTAL：不消费、不处理 —— 完全让给外层容器
+                        }
+
+                        pressed = false
+
+                        when (dir) {
+                            // 逻辑 ②：滑动过 → 抬手即应用
+                            ButtonMenuLogic.Direction.VERTICAL -> {
+                                val idx = ButtonMenuLogic.resolveIndex(dragIndex, labels.size)
+                                dragging = false
+                                if (idx >= 0 && idx != selectedIndex) {
+                                    currentOnSelect(options[idx])
+                                }
+                            }
+
+                            // 逻辑 ③：水平滑动不响应
+                            ButtonMenuLogic.Direction.HORIZONTAL -> {
+                                dragging = false
+                            }
+
+                            // 逻辑 ①：纯点击 → 弹出选单
+                            ButtonMenuLogic.Direction.NONE -> {
+                                dragging = false
+                                expanded = true
+                            }
+                        }
+                    }
+                },
+            contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = labels.getOrElse(selectedIndex) { "" },
+                modifier = Modifier.padding(horizontal = 8.dp),
+                text = labels.getOrElse(displayIndex) { "" },
                 color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 14.sp,
+                fontSize = 15.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            DownChevron(MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
-        // ---- 悬浮表盘 ----
+        // ---------------- 悬浮表盘 ----------------
         if (expanded) {
-            val menuWidthPx = with(density) { 180.dp.toPx() }
-            // 表盘右边缘与按钮右边缘对齐，向左展开，避免超出屏幕
+            val menuWidthPx = with(density) { 190.dp.toPx() }
+            // 右边缘与按钮右边缘对齐，向左展开，避免超出屏幕
             val offsetX = (anchorWidthPx - menuWidthPx).toInt()
             Popup(
                 offset = IntOffset(offsetX, anchorHeightPx),
                 onDismissRequest = { expanded = false },
                 properties = PopupProperties(focusable = true),
             ) {
-                ButtonMenuDial(
+                SharpButtonMenuDial(
                     labels = labels,
                     selectedIndex = selectedIndex,
                     onSelect = { idx ->
                         expanded = false
-                        onSelect(options[idx])
+                        currentOnSelect(options[idx])
                     },
                     onDismiss = { expanded = false },
                     height = menuHeight,
                     rowHeight = rowHeight,
-                    width = 180.dp,
+                    width = 190.dp,
                 )
             }
         }
@@ -243,15 +325,15 @@ fun <T> SharpButtonMenu(
 }
 
 /**
- * 表盘本体：Canvas 绘制 + 原版手势。
+ * 表盘本体：Canvas 绘制 + SharpUI 原版手势。
  *
- * 绘制要点（照搬 SharpUI 原版）：
+ * 绘制要点（照搬原版）：
  *  · 只画**完整落在框内**的行，避免出现半截文字；
  *  · 中央行高亮带（alpha 0.22）+ 字号更大 + 不透明；
  *  · 展开时整体 scaleY 从 0 过冲到 1.06 再回弹。
  */
 @Composable
-private fun ButtonMenuDial(
+private fun SharpButtonMenuDial(
     labels: List<String>,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
@@ -269,7 +351,7 @@ private fun ButtonMenuDial(
         mutableFloatStateOf(selectedIndex.coerceIn(0, (itemCount - 1).coerceAtLeast(0)).toFloat())
     }
 
-    // 展开动画：0 → 过冲 → 1
+    // 展开：0 → 过冲 1.06 → 1
     val dial = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         dial.animateTo(
@@ -290,8 +372,7 @@ private fun ButtonMenuDial(
     val rowStyle = remember { TextStyle(fontSize = DialRowFontSize) }
     val rowPx = with(density) { rowHeight.toPx() }
 
-    // Canvas 的 draw lambda 不是 @Composable 上下文，主题色必须先在
-    // composable 作用域取出来再捕获进 lambda（直接写 MaterialTheme.colorScheme.xxx 会编译失败）
+    // Canvas 的 draw lambda 不是 @Composable，颜色必须提前取出
     val surfaceColor = MaterialTheme.colorScheme.surface
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
 
@@ -331,6 +412,7 @@ private fun ButtonMenuDial(
                     }
 
                     when (dir) {
+                        // 滑动过：抬手应用中央项
                         ButtonMenuLogic.Direction.VERTICAL -> {
                             val idx = ButtonMenuLogic.resolveIndex(scrollIndex, itemCount)
                             if (idx >= 0) {
@@ -338,8 +420,8 @@ private fun ButtonMenuDial(
                                 currentOnSelect(idx)
                             }
                         }
+                        // 纯点击：按落点的纵向坐标反查索引
                         ButtonMenuLogic.Direction.NONE -> {
-                            // 点击某一行：按落点的纵向坐标反查索引
                             val centerY = size.height / 2f
                             val idx = ButtonMenuLogic.indexAtY(
                                 y = down.position.y - centerY,
@@ -405,7 +487,7 @@ private fun ButtonMenuDial(
                             drawRect(
                                 color = SharpColors.Blue,
                                 alpha = alpha * 0.22f,
-                                topLeft = Offset(stroke, y - rowPx / 2f),
+                                topLeft = Offset(stroke, (y - rowPx / 2f).coerceAtLeast(0f)),
                                 size = Size(
                                     (size.width - stroke * 2f).coerceAtLeast(0f),
                                     rowPx,
@@ -428,25 +510,6 @@ private fun ButtonMenuDial(
     }
 }
 
-/** 向下小箭头（直角风格）。 */
-@Composable
-private fun DownChevron(color: Color) {
-    Canvas(modifier = Modifier.size(10.dp)) {
-        val w = size.width
-        val h = size.height
-        val path = Path().apply {
-            moveTo(w * 0.18f, h * 0.38f)
-            lineTo(w * 0.5f, h * 0.62f)
-            lineTo(w * 0.82f, h * 0.38f)
-        }
-        drawPath(
-            path = path,
-            color = color,
-            style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Square, join = StrokeJoin.Miter),
-        )
-    }
-}
-
 /* ================================================================== */
 /* 选项卡                                                              */
 /* ================================================================== */
@@ -454,7 +517,7 @@ private fun DownChevron(color: Color) {
 /**
  * SharpUI 选项卡：横排等分、直角、选中项为 SharpUI 蓝底白字。
  * 与 [SharpButtonMenu] 的分工：选项卡是常驻可见的 2~4 个并列页签；
- * 按钮选单是从较多选项里选一个，展开时才占用视觉空间（悬浮）。
+ * 按钮选单是从较多选项里选一个，选单悬浮展开。
  */
 @Composable
 fun SharpTabs(
@@ -467,7 +530,7 @@ fun SharpTabs(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .border(SharpDimens.border, MaterialTheme.colorScheme.outlineVariant),
+            .background(Color.Transparent),
     ) {
         labels.forEachIndexed { index, text ->
             val selected = index == selectedIndex
@@ -499,14 +562,6 @@ fun SharpTabs(
                     fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (index != labels.lastIndex) {
-                Box(
-                    modifier = Modifier
-                        .width(SharpDimens.border)
-                        .heightIn(min = SharpDimens.buttonMinHeight)
-                        .background(MaterialTheme.colorScheme.outlineVariant),
                 )
             }
         }

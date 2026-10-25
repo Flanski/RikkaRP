@@ -9,6 +9,9 @@ import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.unit.IntOffset
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.fadeIn
@@ -333,20 +336,35 @@ class RouteActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         // 同一帧内连续两次返回时 NavDisplay 的返回状态还没更新，会多回调一次，不加判断会把栈弹空
                         onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
+                        // RikkaRP: 全部显式指定 tween —— 原来 slideInHorizontally { it }
+                        // 没传 animationSpec，用的是默认 spring，时长与弹窗的 250ms 对不上。
                         transitionSpec = {
-                            if (backStack.size == 1) fadeIn() togetherWith fadeOut()
+                            val spec = tween<IntOffset>(SharpMotion.PageMs, easing = SharpMotion.easing)
+                            val specHalf = tween<IntOffset>(SharpMotion.PageMs, easing = SharpMotion.easing)
+                            val fade = tween<Float>(SharpMotion.PageMs, easing = SharpMotion.easing)
+                            if (backStack.size == 1) fadeIn(fade) togetherWith fadeOut(fade)
                             else {
-                                slideInHorizontally { it } togetherWith
-                                    slideOutHorizontally { -it / 2 } + scaleOut(targetScale = 0.7f) + fadeOut()
+                                slideInHorizontally(spec) { it } togetherWith
+                                    slideOutHorizontally(specHalf) { -it / 2 } +
+                                    scaleOut(tween(SharpMotion.PageMs, easing = SharpMotion.easing), targetScale = 0.7f) +
+                                    fadeOut(fade)
                             }
                         },
                         popTransitionSpec = {
-                            slideInHorizontally { -it / 2 } + scaleIn(initialScale = 0.7f) + fadeIn() togetherWith
-                                slideOutHorizontally { it }
+                            val spec = tween<IntOffset>(SharpMotion.PageMs, easing = SharpMotion.easing)
+                            val fade = tween<Float>(SharpMotion.PageMs, easing = SharpMotion.easing)
+                            slideInHorizontally(spec) { -it / 2 } +
+                                scaleIn(tween(SharpMotion.PageMs, easing = SharpMotion.easing), initialScale = 0.7f) +
+                                fadeIn(fade) togetherWith
+                                slideOutHorizontally(spec) { it }
                         },
                         predictivePopTransitionSpec = {
-                            slideInHorizontally { -it / 2 } + scaleIn(initialScale = 0.7f) + fadeIn() togetherWith
-                                slideOutHorizontally { it }
+                            val spec = tween<IntOffset>(SharpMotion.PageMs, easing = SharpMotion.easing)
+                            val fade = tween<Float>(SharpMotion.PageMs, easing = SharpMotion.easing)
+                            slideInHorizontally(spec) { -it / 2 } +
+                                scaleIn(tween(SharpMotion.PageMs, easing = SharpMotion.easing), initialScale = 0.7f) +
+                                fadeIn(fade) togetherWith
+                                slideOutHorizontally(spec) { it }
                         },
                         entryProvider = entryProvider {
                             // RikkaRP: 上游原版把对话页设为淡入淡出（当时对话页是唯一的首屏，

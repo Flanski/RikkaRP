@@ -132,8 +132,8 @@ object SharpDimens {
  * 动效表。SharpUI 的核心手感都在这里。
  */
 object SharpMotion {
-    /** 线性过渡基准（250–300ms 区间） */
-    const val LinearMs = 260
+    /** 全局动画基准时长（用户指定：一律 250ms） */
+    const val LinearMs = 250
     val easing: Easing = LinearEasing
 
     /** 按下用时（比回弹快，手感干脆） */
@@ -179,8 +179,8 @@ object SharpMotion {
     /** 底部弹窗收起时顶边的收缩指数（<1 相对更慢） */
     const val DialogTopCollapseExponent = 0.7f
 
-    /** 页面切换 */
-    const val PageMs = 300
+    /** 页面切换（与弹窗统一 250ms） */
+    const val PageMs = 250
 
     /** 列表逐项进场，每项错开 */
     const val StaggerMs = 28
