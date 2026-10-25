@@ -1,107 +1,99 @@
 <!-- RIKKARP-FORK-BANNER -->
 > [!IMPORTANT]
-> **RikkaRP is an UNOFFICIAL fork of [RikkaHub](https://github.com/rikkahub/rikkahub).**
-> It is not affiliated with, endorsed by, or supported by the upstream author.
-> Please report all issues to **this** repository, never upstream.
-> Licensed under **AGPL-3.0** — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
-> Source: https://github.com/Flanski/RikkaRP
+> **RikkaRP 是 [RikkaHub](https://github.com/rikkahub/rikkahub) 的非官方分支（unofficial fork）。**
+> 与原项目作者无隶属、无背书、无支持关系。所有问题请提交到**本仓库**，不要打扰上游。
+> 本项目以 **AGPL-3.0** 授权 —— 见 [LICENSE](LICENSE) 与 [NOTICE](NOTICE)。
+> 对应源码：https://github.com/Flanski/RikkaRP
 
 <div align="center">
-  <img src="docs/icon.png" alt="App Icon" width="100" />
-  <h1>RikkaHub</h1>
-
-A native Android LLM chat client that supports switching between different providers for
-conversations 🤖💬
-
-Click to join our Discord server 👉 [【RikkaHub】](https://discord.gg/9weBqxe5c4)
-
-[简体中文](README_ZH_CN.md) | [繁體中文](README_ZH_TW.md) | English
+  <h1>RikkaRP</h1>
+  <p><b>专注 LLM 驱动的角色扮演与视觉小说客户端</b></p>
+  <p><i>An LLM-driven role-play &amp; visual-novel client for Android</i></p>
 </div>
 
-<div align="center">
-  <img src="docs/img/poster.png" alt="RikkaHub" width="800" />
-</div>
+---
 
-## 🚀 Download
+## 这是什么
 
-🔗 [Download from Website](https://rikka-ai.com/download) (Recommended)
+RikkaRP 是一个 Android 端的大语言模型客户端，方向是**角色扮演（Role-Play）**与**视觉小说（Visual Novel）**。
 
-🔗 [Download from Google Play](https://play.google.com/store/apps/details?id=me.rerere.rikkahub)
+它以内核成熟的 RikkaHub 为底座 —— 多提供商接入、流式对话、工具调用、记忆系统这些基础设施不重造，
+把力气花在角色扮演与叙事交互这一层。
 
-> [!WARNING]
-> There are many forked versions of RikkaHub. Issues with forks are unrelated to RikkaHub, so please use forks with caution to avoid privacy leaks or excessive permission requests.
+## 当前状态
 
-## 💖 Sponsors
+本项目处于**早期演进阶段**，如实说明：
 
-| Sponsor | Description |
-|:---:|:---|
-| <img src="docs/sponsors/aihubmix.png" alt="Aihubmix" width="50" /><br /><b>Aihubmix</b> | Thanks to <a href="https://aihubmix.com?aff=pG7r">aihubmix.com</a> for their financial support. We recommend using aihubmix as a one-stop shop for mainstream models worldwide. (OpenAI, Claude, Google Gemini, DeepSeek, Qwen, and hundreds more). |
-| <img src="docs/sponsors/api-mart.png" alt="APIMart" width="50" /><br /><b><a href="https://go.apimart.ai/gh-rikkahub">APIMart</a></b> | Thanks to APIMart for sponsoring this project! APIMart is a low-cost API platform for AI image & video generation — GPT-Image-2 from $0.006/image, 160+ images per dollar. One async API covers both image and video: submit a task, get an ID, fetch results via polling or callback. Batch tens of thousands of images without timeouts, switch models without changing code. Pay-as-you-go with no monthly fee — <a href="https://go.apimart.ai/gh-rikkahub">sign up here</a> to get started. |
-| <img src="docs/sponsors/suixiang.jpg" alt="随想AI中转" width="50" /><br /><b><a href="https://sui-xiang.com">随想AI中转</a></b> | 感谢<a href="https://sui-xiang.com">随想AI中转</a>对本项目的赞助！随想AI中转 是一家可靠高效的 API 中继服务提供商，提供 Claude、Codex、Gemini 等的中继服务。注重隐私的中转站·无数据倒卖·无模型掺水，隐私，透明，极速售后。新账户注册每日签到就送 0.5 元测试额度，充值额度 1:1，无需订阅，按量付费。多线路冗余、跨区域容灾、自动故障切换，长链路 SSE 不中断。99.9% 可用性，关键调用从不掉队。 |
-| <img src="docs/sponsors/ztest.png" alt="真测 ztest.ai" width="50" /><br /><b><a href="https://ztest.ai">真测 ztest.ai</a></b> | 感谢<a href="https://ztest.ai">真测 ztest.ai</a>对本项目的赞助！真测 ztest.ai 是一个 AI 中转站模型检测平台，检测结果数据全公开，23 项探针覆盖协议、身份、能力、内容完整性、安全性、性能六大维度，交叉印证识别伪造与降级。作为独立第三方验证平台，实时监测 AI 中转站的模型真实性、响应质量与服务可用性。 |
-| <img src="docs/sponsors/maru.png" alt="MaruCode" width="50" /><br /><b><a href="https://api.muteki.site/register?aff=Rikkahub&promo=Rikkahub">MaruCode</a></b> | <b><a href="https://api.muteki.site/register?aff=Rikkahub&promo=Rikkahub">MaruCode</a></b> 是一家偶尔做做慈善的小破站 API，自营号池，主要提供 Codex、Claude Code、GPT Image 等主流模型，支持 Websocket 协议，明码标价(Codex 0.25x, CC 1.5x)，透明汇率(1:1)，<a href="https://api.muteki.site/register?aff=Rikkahub&promo=Rikkahub">新用户注册送 2 刀</a>。<a href="https://images-2.muteki.site">生图工作台🖼️</a> |
-| <img src="docs/sponsors/naapi.png" alt="NaAPI 钠API" width="50" /><br /><b><a href="https://naapi.cc/register?aff=rikkahub">NaAPI 钠API</a></b> | Thanks to <a href="https://naapi.cc/register?aff=rikkahub">NaAPI</a> (naapi.cc) for sponsoring this project! NaAPI is an OpenAI-compatible LLM gateway that reliably serves 300+ models from OpenAI, Anthropic, Google and others at discounted pricing. One base URL and one key is all you need: multi-line redundancy with automatic failover keeps long SSE streams alive, and pricing is strictly pay-as-you-go with a 1:1 top-up ratio — no subscription, no hidden markup. |
+| 部分 | 状态 |
+|---|---|
+| 底层能力（多提供商 / 流式 / 工具 / 记忆） | ✅ 继承自 RikkaHub 3.1.1，可用 |
+| 角色卡导入（SillyTavern V2 / V3） | ✅ 继承自上游 |
+| 世界书 / 正则输出 / 宏 / 历史摘要 | ✅ 继承自上游 |
+| 界面层重构 | 🚧 进行中（Sharp 设计系统） |
+| 角色扮演专属功能 | 🚧 规划中 |
+| 视觉小说表现层（立绘 / 台词框 / 分支） | 🚧 规划中，尚未实现 |
 
-## ✨ Features
+> 上面写「规划中」的部分**目前代码里没有**。不在 README 里把没做的东西写成已完成。
 
-- 🎨 Material 3 Expressive design and 🌙 Dark mode
-- 📦 Workspace: a proot-based Linux agent environment
-- 🎬 Media generation (image and video)
-- 🔄 Multiple AI Provider Support: custom API / URL / models (all OpenAI, Google, Anthropic compatible api)
-- 🖼️ Multimodal input support (Image, Text Documentation, PDF, Docx)
-- 🖥️ Web access for multi-platform use
-- 🛠️ MCP and Skills support
-- 📝 Markdown Rendering (with code highlighting, Latex formulas, tables, Mermaid)
-- 🔍 Search capabilities (Exa, Tavily, Zhipu, LinkUp, Brave, Perplexity, etc.)
-- 🧩 Prompt variables (model name, time, etc.)
-- 🤳 QR code export and import for providers
-- 🤖 Agent customization
-- 🧠 File-based memory
-- 📝 AI Translation
-- 🌐 Custom HTTP request headers and request bodies
-- 💌 Silly Tavern character card import
+## 相对上游的改动
 
-## ✨ Development
+### 界面
 
-> [!IMPORTANT]
-> This project does not accept pull requests (PRs).
+- 摒弃 Material 3 Expressive 的浮动与圆角，改用**直角 Sharp 设计系统**：
+  方角、细边框、线性动画、按压果冻回弹
+- 原「抽屉式」会话列表改为**独立消息页并作为启动首页**
+- 消息页底部改为**导航栏**；顶栏承载头像与昵称
+- 会话列表**左滑菜单**（置顶 / 更多 / 删除）
+- 会话项的**长按菜单**保留上游全部功能（重新生成标题、移动到助手、移动到文件夹、删除）
+- 设置类页面统一为单行顶栏，去除大标题占位
 
-This project is developed using [Android Studio](https://developer.android.com/studio).
+### 工程
 
-Technology stack documentation:
+- 包名 `io.github.flanski.rikkarp`，与上游并存安装
+- 移除 Firebase / 分析 / 内购等上游的商业化组件
+- `:terminal` 模块复用预编译 `libtermux.so`，无需 NDK 交叉编译
 
-- [Kotlin](https://kotlinlang.org/) (Development language)
-- [Koin](https://insert-koin.io/) (Dependency Injection)
-- [Jetpack Compose](https://developer.android.com/jetpack/compose) (UI framework)
-- [DataStore](https://developer.android.com/topic/libraries/architecture/datastore) (Preference data
-  storage)
-- [Room](https://developer.android.com/training/data-storage/room) (Database)
-- [Coil](https://coil-kt.github.io/coil/) (Image loading)
-- [Material 3 Expressive](https://m3.material.io/) (UI design)
-- [Navigation 3](https://developer.android.com/guide/navigation/navigation-3) (Navigation)
-- [Okhttp](https://square.github.io/okhttp/) (HTTP client)
-- [kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization) (JSON serialization)
+## 构建
 
-> [!TIP]
-> You need a `google-services.json` file at `app` folder to build the app.
+```bash
+./gradlew :app:assembleGithubDebug
+```
 
-## 💰 Donate
+产物：`app/build/outputs/apk/github/debug/app-github-arm64-v8a-debug.apk`
 
-* [Ko-fi](https://ko-fi.com/reovodev)
-* [爱发电](https://afdian.com/a/reovo)
+需要注意两点：
 
-## ⭐ Star History
+1. **`google-services.json`**：`applicationId` 已改为 `io.github.flanski.rikkarp`，
+   若沿用上游的配置文件，其中的 `package_name` 必须同步修改，否则
+   `processReleaseGoogleServices` 会报 `No matching client`。
+2. **构建工具链**：`compileSdk 37` + AGP 9.x（内置 Kotlin 编译器，
+   不要再额外加 `org.jetbrains.kotlin.android` 插件；Compose 仍需
+   `org.jetbrains.kotlin.plugin.compose`）。
 
-If you like this project, please give it a star ⭐
+## 技术栈
 
-<a href="https://www.star-history.com/?type=date&repos=re-ovo%2Frikkahub">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=re-ovo/rikkahub&type=date&theme=dark&legend=top-left&sealed_token=qSytWeq7LkzQQViTjK0MYlvvA_qkfuwjOxOqgbRpLUZZwok5rO6LXhpVL7Mq-q3o89BfKpzE7g66BCy18H6eiqTsD8czD0J-HejLqmHy-npcvCTHu11wZw" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=re-ovo/rikkahub&type=date&legend=top-left&sealed_token=qSytWeq7LkzQQViTjK0MYlvvA_qkfuwjOxOqgbRpLUZZwok5rO6LXhpVL7Mq-q3o89BfKpzE7g66BCy18H6eiqTsD8czD0J-HejLqmHy-npcvCTHu11wZw" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=re-ovo/rikkahub&type=date&legend=top-left&sealed_token=qSytWeq7LkzQQViTjK0MYlvvA_qkfuwjOxOqgbRpLUZZwok5rO6LXhpVL7Mq-q3o89BfKpzE7g66BCy18H6eiqTsD8czD0J-HejLqmHy-npcvCTHu11wZw" />
- </picture>
-</a>
+继承自上游：[Kotlin](https://kotlinlang.org/)、
+[Jetpack Compose](https://developer.android.com/jetpack/compose)、
+[Koin](https://insert-koin.io/)、[Room](https://developer.android.com/training/data-storage/room)、
+[DataStore](https://developer.android.com/topic/libraries/architecture/datastore)、
+[OkHttp](https://square.github.io/okhttp/)、
+[kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization)、
+[Navigation 3](https://developer.android.com/guide/navigation/navigation-3)、
+[Coil](https://coil-kt.github.io/coil/)
 
-## 📄 License
+## 许可与合规
 
-This project is licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0).
+本项目以 **GNU Affero General Public License v3.0** 授权，完整条款见 [LICENSE](LICENSE)。
+
+- 本项目是 RikkaHub 的修改版本，修改内容按 AGPL-3.0 第 5(a) 条以 git 历史标注
+- 版权与来源声明见 [NOTICE](NOTICE)
+- 分发本项目的二进制产物时，须同时提供对应源码
+- 本项目**不声称**拥有上游项目的任何商标权利；「Rikka」仅用于标识代码来源
+
+## 致谢
+
+本项目建立在 [RikkaHub](https://github.com/rikkahub/rikkahub)（作者 re-ovo）之上，
+感谢原作者与所有贡献者。
+
+角色卡 V2/V3 格式、世界书等设计参考自
+[SillyTavern](https://github.com/SillyTavern/SillyTavern) 社区（AGPL-3.0）。

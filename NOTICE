@@ -2,8 +2,8 @@ RikkaRP — unofficial role-play fork of RikkaHub
 =================================================
 
 Upstream project : RikkaHub  https://github.com/rikkahub/rikkahub
-Upstream version : 3.1.0
-Upstream commit  : eeef60b22ba24383daf51f3c6c2e5b75bbab6bba
+Upstream version : 3.1.1
+Upstream commit  : ad2c4430d50ba52392b2941367f98ef59614cb73
 License          : GNU Affero General Public License v3.0 (see LICENSE)
 
 Copyright (C) RikkaHub contributors.
@@ -21,6 +21,31 @@ You should have received a copy of the GNU Affero General Public License along
 with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 --------------------------------------------------------------------------
+UPSTREAM HISTORY
+--------------------------------------------------------------------------
+RikkaRP was initially based on RikkaHub 3.1.0
+(commit eeef60b22ba24383daf51f3c6c2e5b75bbab6bba) and was subsequently
+merged with upstream 3.1.1 (commit ad2c4430d50ba52392b2941367f98ef59614cb73).
+The git history of this repository records that lineage.
+
+--------------------------------------------------------------------------
+MODIFICATIONS
+--------------------------------------------------------------------------
+In accordance with AGPL-3.0 section 5(a), modifications made by this fork are
+recorded in the repository's git history with descriptive commit messages.
+Summary of modifications (non-exhaustive):
+
+  * Renamed the application to "RikkaRP" and changed the applicationId to
+    io.github.flanski.rikkarp so it can be installed alongside upstream.
+  * Replaced the Material 3 Expressive UI with a right-angled "Sharp" design
+    system; reworked the conversation list into a standalone messages page
+    used as the launch screen; added a bottom navigation bar and swipe
+    actions on conversation items.
+  * Removed Firebase / analytics / in-app purchase components.
+  * Reused a prebuilt libtermux.so for the :terminal module instead of
+    building it from source.
+
+--------------------------------------------------------------------------
 NOTICE ON INDEPENDENCE
 --------------------------------------------------------------------------
 RikkaRP is an UNOFFICIAL fork.  It is not affiliated with, endorsed by,
@@ -31,4 +56,5 @@ directed to this fork's repository, NOT to upstream.
 The name "Rikka" is retained only to indicate the origin of the code.  No
 trademark rights are claimed or granted by either project.
 
-Corresponding source for any distributed build: https://github.com/Flanski/RikkaRP
+Corresponding source for any distributed build:
+https://github.com/Flanski/RikkaRP
