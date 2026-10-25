@@ -26,8 +26,8 @@ android {
         minSdk = 26
         targetSdk = 37
         // RikkaRP: 上游 3.1.1 亦为 versionCode 194，本分支递增到 195 以免同码不同内容
-        versionCode = 201
-        versionName = "3.1.1-rp.7"
+        versionCode = 202
+        versionName = "3.1.1-rp.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -49,6 +49,23 @@ android {
     }
 
     signingConfigs {
+        /**
+         * RikkaRP: 固定的 debug 签名。
+         *
+         * 默认情况下 AGP 会在 ~/.android/debug.keystore 自动生成一把，
+         * 而 GitHub Actions 每次都是全新 runner —— 于是**每次编译出来的 APK 签名都不同**，
+         * 无法覆盖安装，只能卸载重装。
+         *
+         * 这里改用仓库内的固定 keystore（仅用于 debug，口令公开，不是发布密钥），
+         * 本地与 CI 共用同一把，从此覆盖安装不会失败。
+         */
+        create("rikkarpDebug") {
+            storeFile = rootProject.file("keystore/rikkarp-debug.keystore")
+            storePassword = "rikkarp"
+            keyAlias = "rikkarp-debug"
+            keyPassword = "rikkarp"
+        }
+
         create("release") {
             val localProperties = Properties()
             val localPropertiesFile = rootProject.file("local.properties")
@@ -84,6 +101,8 @@ android {
         }
         debug {
             applicationIdSuffix = ".debug"
+            // 固定签名，保证每次编译的 APK 可覆盖安装（见 signingConfigs.rikkarpDebug）
+            signingConfig = signingConfigs.getByName("rikkarpDebug")
             buildConfigField("String", "VERSION_NAME", "\"${android.defaultConfig.versionName}\"")
             buildConfigField("String", "VERSION_CODE", "\"${android.defaultConfig.versionCode}\"")
         }

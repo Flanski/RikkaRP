@@ -9,6 +9,8 @@ import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.unit.IntOffset
 import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
@@ -338,33 +340,43 @@ class RouteActivity : ComponentActivity() {
                         onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
                         // RikkaRP: 全部显式指定 tween —— 原来 slideInHorizontally { it }
                         // 没传 animationSpec，用的是默认 spring，时长与弹窗的 250ms 对不上。
+                        // ────────────────────────────────────────────────────────────
+                        // 页面转场：照搬 Litchi(Cyrene) MainScreen.kt 的 sharedAxisX
+                        //
+                        // 原写法把旧页也做了 scaleOut(0.7f) + fadeOut()，两页同时半透明，
+                        // 背景透出来 —— 视觉上就是「渐变」，不是滑动。这正是被反复指出的问题。
+                        //
+                        // Litchi 的解法：旧页用 ExitTransition.None **完全静止**，
+                        // 只有新页从屏幕右缘之外整屏滑入并淡入。因为 target 绘制在上层，
+                        // 静止的旧页被新页逐渐盖住，观感是干脆的整页推进，全程无重影。
+                        // ────────────────────────────────────────────────────────────
                         transitionSpec = {
-                            val spec = tween<IntOffset>(SharpMotion.PageMs, easing = SharpMotion.easing)
-                            val specHalf = tween<IntOffset>(SharpMotion.PageMs, easing = SharpMotion.easing)
-                            val fade = tween<Float>(SharpMotion.PageMs, easing = SharpMotion.easing)
-                            if (backStack.size == 1) fadeIn(fade) togetherWith fadeOut(fade)
-                            else {
-                                slideInHorizontally(spec) { it } togetherWith
-                                    slideOutHorizontally(specHalf) { -it / 2 } +
-                                    scaleOut(tween(SharpMotion.PageMs, easing = SharpMotion.easing), targetScale = 0.7f) +
-                                    fadeOut(fade)
+                            val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            if (backStack.size == 1) {
+                                fadeIn(fade) togetherWith fadeOut(fade)
+                            } else {
+                                (slideInHorizontally(slide) { it } + fadeIn(fade)) togetherWith
+                                    ExitTransition.None
                             }
                         },
                         popTransitionSpec = {
-                            val spec = tween<IntOffset>(SharpMotion.PageMs, easing = SharpMotion.easing)
-                            val fade = tween<Float>(SharpMotion.PageMs, easing = SharpMotion.easing)
-                            slideInHorizontally(spec) { -it / 2 } +
-                                scaleIn(tween(SharpMotion.PageMs, easing = SharpMotion.easing), initialScale = 0.7f) +
-                                fadeIn(fade) togetherWith
-                                slideOutHorizontally(spec) { it }
+                            val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            // 返回：子页向右整屏滑出并淡出。
+                            // Litchi 这里用 EnterTransition.None（父页静止），并靠 zIndex 让子页
+                            // 始终处于上层；而 Nav3 的 NavDisplay 不暴露 zIndex，
+                            // 父页一旦完全静止且不透明就会把子页整个盖住、看不到滑出过程。
+                            // 因此父页改为从左侧轻微滑回（-it/4，**不带任何淡入**）：
+                            // 仍然全程不透明、无渐变感，同时保证子页滑出可见。
+                            (slideInHorizontally(slide) { -it / 4 }) togetherWith
+                                (slideOutHorizontally(slide) { it } + fadeOut(fade))
                         },
                         predictivePopTransitionSpec = {
-                            val spec = tween<IntOffset>(SharpMotion.PageMs, easing = SharpMotion.easing)
-                            val fade = tween<Float>(SharpMotion.PageMs, easing = SharpMotion.easing)
-                            slideInHorizontally(spec) { -it / 2 } +
-                                scaleIn(tween(SharpMotion.PageMs, easing = SharpMotion.easing), initialScale = 0.7f) +
-                                fadeIn(fade) togetherWith
-                                slideOutHorizontally(spec) { it }
+                            val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            (slideInHorizontally(slide) { -it / 4 }) togetherWith
+                                (slideOutHorizontally(slide) { it } + fadeOut(fade))
                         },
                         entryProvider = entryProvider {
                             // RikkaRP: 上游原版把对话页设为淡入淡出（当时对话页是唯一的首屏，
@@ -459,12 +471,9 @@ class RouteActivity : ComponentActivity() {
                                 MediaCreationSessionsPage()
                             }
 
-                            // 从会话列表展开（容器变换），页面本身只做淡入淡出，避免和平移打架
-                            entry<Screen.MediaCreation>(
-                                metadata = NavDisplay.transitionSpec { fadeIn() togetherWith fadeOut() }
-                                    + NavDisplay.popTransitionSpec { fadeIn() togetherWith fadeOut() }
-                                    + NavDisplay.predictivePopTransitionSpec { fadeIn() togetherWith fadeOut() }
-                            ) { key ->
+                            // 同样去掉 fade metadata —— 让它走全局的整页滑动，
+                            // 否则从消息页进媒体创作会是「渐变」，与其它页面不一致。
+                            entry<Screen.MediaCreation> { key ->
                                 MediaCreationPage(key.id)
                             }
 

@@ -66,7 +66,6 @@ import me.rerere.rikkahub.ui.theme.sharp.SharpColors
 import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import kotlin.math.pow
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
 /*
@@ -83,7 +82,7 @@ import kotlinx.coroutines.launch
  *   1. 底部/全屏形态给按钮区加 navigationBarsPadding() —— 原先被三大金刚键压住
  *   2. 弹窗内**子页**切换动画（push/pop + SheetNav 方向）—— 原先无过渡
  *   3. 选项可带图标（SharpDialogOption）
- *   4. 开合信号走 Channel 队列，**动画一定完整播完**，不会被新信号打断而抽搐
+ *   4. 开合动画**可被打断**（必选项）：新信号立即接管，不排队等待
  * ============================================================================
  */
 
@@ -396,55 +395,54 @@ private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
     val open = requested != null
 
     /**
-     * 开合请求队列。
+     * 开合动画。
      *
-     * 为什么不用 `LaunchedEffect(open)` 直接驱动动画：key 一变会**取消**正在跑的协程，
-     * 于是「展开到一半收到关闭信号」会让动画从半路折返，视觉上抽搐一下。
-     * 队列 + 单消费者保证 `animateTo` 一定跑完，期间的信号排队等待。
+     * **动画必须可被打断**（用户明确要求，且这是必选项）：
+     * `LaunchedEffect(open)` 的 key 一变会取消正在跑的协程，
+     * 于是「展开到一半收到关闭」会立刻转入收起 —— 响应是即时的，不排队等待。
+     *
+     * 注意：这里**不再**使用 Channel 队列。队列会让收起必须等展开播完，
+     * 表现为「点了关闭没反应，过一会儿才关」，与要求相反。
      */
-    val requests = remember { Channel<Boolean>(Channel.UNLIMITED) }
-    LaunchedEffect(open) { requests.send(open) }
-
-    LaunchedEffect(Unit) {
-        for (wantOpen in requests) {
-            if (wantOpen) {
-                if (phase == Phase.OPEN) continue
-                phase = Phase.OPENING
-                // 1) 按 Demo 曲线展开到过冲峰值
+    LaunchedEffect(open) {
+        if (open) {
+            closing = false
+            phase = Phase.OPENING
+            // 从当前值continue，不强制归零 —— 这样中途反向也能接上，不会跳一下
+            if (scale.value <= 0.001f) scale.snapTo(0f)
+            // 1) 按 Demo 曲线展开到过冲峰值
+            scale.animateTo(
+                SharpMotion.DialogPeak,
+                tween(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing),
+            )
+            // 2) 到达后震荡几下
+            scale.animateTo(
+                1f,
+                spring(
+                    SharpMotion.DampingRatio,
+                    SharpMotion.Stiffness,
+                    visibilityThreshold = SharpMotion.VisibilityThreshold,
+                ),
+            )
+            phase = Phase.OPEN
+        } else {
+            if (phase == Phase.IDLE) return@LaunchedEffect
+            phase = Phase.CLOSING
+            closing = true
+            // 已完全展开时先反向放大一点再收（与 Demo 一致）
+            if (scale.value >= 1f) {
                 scale.animateTo(
                     SharpMotion.DialogPeak,
-                    tween(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing),
+                    tween(SharpMotion.PressMs, easing = SharpMotion.easing),
                 )
-                // 2) 到达后震荡几下
-                scale.animateTo(
-                    1f,
-                    spring(
-                        SharpMotion.DampingRatio,
-                        SharpMotion.Stiffness,
-                        visibilityThreshold = SharpMotion.VisibilityThreshold,
-                    ),
-                )
-                phase = Phase.OPEN
-            } else {
-                if (phase == Phase.IDLE) continue
-                phase = Phase.CLOSING
-                closing = true
-                // 已完全展开时先反向放大一点再收（与 Demo 一致）
-                if (scale.value >= 1f) {
-                    scale.animateTo(
-                        SharpMotion.DialogPeak,
-                        tween(SharpMotion.PressMs, easing = SharpMotion.easing),
-                    )
-                }
-                scale.animateTo(
-                    0f,
-                    tween(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing),
-                )
-                // 动画播完才停止渲染 —— 用户能看到完整收起过程
-                spec = null
-                closing = false
-                phase = Phase.IDLE
             }
+            scale.animateTo(
+                0f,
+                tween(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing),
+            )
+            spec = null
+            closing = false
+            phase = Phase.IDLE
         }
     }
 
