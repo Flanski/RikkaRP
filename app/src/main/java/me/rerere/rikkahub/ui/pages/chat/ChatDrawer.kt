@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -215,6 +216,19 @@ fun MessagesPage(currentId: Uuid? = null) {
     val sharpDialog = LocalSharpDialog.current
     val defaultAssistantName = stringResource(R.string.assistant_page_default_assistant)
 
+    // ≡ 弹窗用到的文案与列表必须在这里（composable 上下文）预先求值 ——
+    // SharpIconButton 的 onClick 是普通 lambda，里面不能调用 stringResource。
+    val moreMenuTitle = stringResource(R.string.chat_page_more_actions)
+    val moreMenuOptions = listOf(
+        stringResource(R.string.chat_page_menu_ai_translator),
+        stringResource(R.string.media_creation_title),
+        stringResource(R.string.chat_page_menu_image_generation),
+        // 图A-4：助手选择
+        stringResource(R.string.chat_page_switch_assistant),
+    )
+    val assistantMenuTitle = stringResource(R.string.assistant_page_title)
+    val assistantNames = settings.assistants.map { it.name.ifEmpty { defaultAssistantName } }
+
     // 矮屏（如手表、横屏手机）上顶部固定会把会话列表挤没，改为跟随列表一起滚动
     val windowHeight = LocalWindowInfo.current.containerDpSize.height
     val scrollableHeader = windowHeight < 640.dp
@@ -328,28 +342,19 @@ fun MessagesPage(currentId: Uuid? = null) {
 
                     // 图A-2：≡ 打开 SharpUI 弹窗，收纳原本占两行的入口
                     SharpIconButton(onClick = {
-                        val options = listOf(
-                            stringResource(R.string.chat_page_menu_ai_translator),
-                            stringResource(R.string.media_creation_title),
-                            stringResource(R.string.chat_page_menu_image_generation),
-                            // 图A-4：助手选择
-                            stringResource(R.string.chat_page_switch_assistant),
-                        )
                         sharpDialog.showOptions(
-                            title = stringResource(R.string.chat_page_more_actions),
-                            options = options,
+                            title = moreMenuTitle,
+                            options = moreMenuOptions,
                         ) { index ->
                             when (index) {
                                 0 -> navController.navigate(Screen.Translator)
                                 1 -> navController.navigate(Screen.MediaCreationSessions)
                                 2 -> navController.navigate(Screen.ImageGen)
                                 3 -> {
-                                    // 图A-4：助手选择也放进这个弹窗
+                                    // 图A-4：助手选择
                                     sharpDialog.showOptions(
-                                        title = stringResource(R.string.assistant_page_title),
-                                        options = settings.assistants.map { assistant ->
-                                            assistant.name.ifEmpty { defaultAssistantName }
-                                        },
+                                        title = assistantMenuTitle,
+                                        options = assistantNames,
                                     ) { assistantIndex ->
                                         settings.assistants.getOrNull(assistantIndex)
                                             ?.let(selectAssistant)
