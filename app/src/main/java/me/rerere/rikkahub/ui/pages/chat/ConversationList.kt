@@ -98,6 +98,9 @@ fun ColumnScope.ConversationList(
     // 左滑菜单里点「更多」后要弹出原有的长按菜单，状态提到这一层，
     // 因为 ConversationItem 被 SwipeableRow 包了一层，外部需要能触发它。
     var menuOpenFor by remember { mutableStateOf<Uuid?>(null) }
+    // 当前轻扫菜单展开的是哪一行 —— 提到列表层，保证同时只有一行展开，
+    // 点其它行时旧行会收到 isOpen=false 自行收回。
+    var swipeOpenFor by remember { mutableStateOf<Uuid?>(null) }
     // 列表顶部若放了 header，会话项在 LazyColumn 中的位置要往后挪一位
     val headerCount = if (header != null) 1 else 0
 
@@ -178,8 +181,14 @@ fun ColumnScope.ConversationList(
                     // RikkaRP: 左滑露出「置顶 / 更多 / 删除」，逻辑全部复用原有的回调
                     SwipeableRow(
                         modifier = Modifier.animateItem(),
-                        // 向左轻扫 → 右侧露出：置顶 / 更多 / 删除
-                        // （向右轻扫是把菜单推回去收回，不是另一个菜单）
+                        isOpen = swipeOpenFor == conv.id,
+                        onOpenChange = { open ->
+                            swipeOpenFor = if (open) conv.id else {
+                                if (swipeOpenFor == conv.id) null else swipeOpenFor
+                            }
+                        },
+                        // 从右往左轻扫 → 滑出菜单；从左往右轻扫 → 收回。
+                        // 菜单展开后再次左滑 → 最后一项（删除）被拉伸，拉够即删除。
                         rightActions = listOf(
                             SwipeAction(
                                 label = if (conv.isPinned) {
@@ -320,11 +329,11 @@ private fun ConversationItem(
             .background(backgroundColor),
     ) {
         Row(
-            // RikkaRP: 行高固定下限 48dp —— 左滑菜单的内容（图标+文字，约 33dp 高）
-            // 需要完整落在行内，否则会被 matchParentSize 的约束上下裁切。
+            // RikkaRP: 行高 56dp —— 轻扫菜单的内容（17dp 图标 + 5dp 间距 + 11sp 文字
+            // 约 40dp）需要完整落在行内并上下留出余量，48dp 时图标会贴着顶边。
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 48.dp)
+                .heightIn(min = 56.dp)
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

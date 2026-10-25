@@ -22,6 +22,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +36,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,47 +54,90 @@ data class SwipeAction(
     val onClick: () -> Unit,
 )
 
+/** 滑动速度阈值（px/帧）。超过它视为"快速轻扫"，不必拉到 1/5 也能吸附。 */
+private const val FLING_THRESHOLD = 12f
+
 /**
  * 轻扫菜单的行容器（SharpUI 直角风格）。
  *
- * 交互：
- *  · **向左轻扫** → 从右侧露出 [rightActions]
- *  · **向右轻扫** → 把菜单推回去（**收回**），不是开另一个菜单
- *  · **松手即吸附**：拉出 `总宽 × 1/5` 或滑动够快就会展开 ——
- *    原先要拉过一半才出得来，手感很差
- *  · **菜单展开时点内容区只收回菜单**，不会顺带打开对话
+ * ## 交互（严格按需求）
  *
- * 「点空白收回」的实现要点：
- *   不能只在外层包一个 pointerInput —— 子组件（ConversationItem）的
- *   `combinedClickable` 会先消费点击，外层收不到。这里在展开时**在内容之上
- *   覆盖一层透明 Box** 手动拦截点击，因此内层永远拿不到事件。
+ * | 手势 | 行为 |
+ * |---|---|
+ * | **从右往左**轻扫 | 滑出菜单 |
+ * | **从左往右**轻扫 | **收回**菜单（不会打开） |
+ * | 点空白 / 点其他地方 | 收回菜单 |
+ * | 菜单已展开时**再次从右往左**轻扫 | 继续拉伸末尾的「删除」按钮；拉够即**删除对话** |
+ *
+ * ## 两个曾经踩过的坑（写在代码里防复发）
+ *
+ * 1. **右滑不能打开菜单**：吸附判据原本用 `abs(velocity) > 阈值`，不区分方向。
+ *    右滑时位移被 `coerceIn` 夹在 0，但速度仍然很大，于是判成"展开" ——
+ *    表现就是「从左往右轻扫也能打开菜单」。现在速度判据**必须**带方向
+ *    （`velocity < -阈值` 才算向左甩）。
+ *
+ * 2. **图标贴顶**：菜单单元格用 `fillMaxHeight()` + 居中，行高只有 48dp 时
+ *    图标 + 间距 + 文字（约 35dp）上下余量极小，看起来就是"贴到顶部"。
+ *    现在调用方把行高提到 56dp，且单元格内部留白按 16/5/11sp 收紧。
+ *
+ * @param isOpen 由外部统一控制「当前展开的是哪一行」，保证同时只有一行展开，
+ *               点其他行时也能收回。
+ * @param onOpenChange 展开/收起时回调。
  */
 @Composable
 fun SwipeableRow(
     rightActions: List<SwipeAction>,
     modifier: Modifier = Modifier,
+    isOpen: Boolean = false,
+    onOpenChange: (Boolean) -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
 
     val actionWidth = 76.dp
-    val rightWidthPx = with(density) { (actionWidth * rightActions.size).toPx() }
+    val actionWidthPx = with(density) { actionWidth.toPx() }
+    val menuWidthPx = actionWidthPx * rightActions.size
 
-    // 正数 = 向右拉开（露出左侧菜单），负数 = 向左拉开（露出右侧菜单）
+    // 末尾「删除」按钮最多可再拉伸的宽度
+    val maxStretchPx = with(density) { 104.dp.toPx() }
+    // 拉伸超过这个量就算"拉够了"，触发删除
+    val deleteTriggerPx = with(density) { 62.dp.toPx() }
+
+    // 负数 = 向左拉开。范围 [-menuWidth - maxStretch, 0]
     val offsetX = remember { Animatable(0f) }
-    // 只在「展开/收起」跨越时重组，避免每帧重组
     var menuOpen by remember { mutableStateOf(false) }
+
+    // 拉伸量（仅当越过菜单总宽时为正）
+    val stretchPx by remember {
+        derivedStateOf {
+            val over = -(offsetX.value + menuWidthPx)
+            if (over > 0f) over else 0f
+        }
+    }
 
     val settleMs = SharpMotion.LinearMs
 
     suspend fun settleTo(target: Float) {
         offsetX.animateTo(target, tween(settleMs, easing = SharpMotion.easing))
-        menuOpen = target < -0.5f
+        menuOpen = target < -1f
+        onOpenChange(menuOpen)
     }
 
     fun close() {
-        scope.launch { settleTo(0f) }
+        if (offsetX.value != 0f || menuOpen) {
+            scope.launch { settleTo(0f) }
+        } else {
+            onOpenChange(false)
+        }
+    }
+
+    // 外部要求收起（例如点了别的行）：本行同步收回
+    LaunchedEffect(isOpen) {
+        if (!isOpen && offsetX.value != 0f) {
+            offsetX.animateTo(0f, tween(settleMs, easing = SharpMotion.easing))
+            menuOpen = false
+        }
     }
 
     Box(modifier = modifier.fillMaxWidth()) {
@@ -101,8 +147,20 @@ fun SwipeableRow(
                 modifier = Modifier.matchParentSize(),
                 horizontalArrangement = Arrangement.End,
             ) {
-                rightActions.forEach { action ->
-                    SwipeActionCell(action, actionWidth, ::close)
+                rightActions.forEachIndexed { index, action ->
+                    val isLast = index == rightActions.lastIndex
+                    // 只有最后一个按钮（删除）跟着拉伸量加宽；
+                    // Row 是 End 对齐，加宽后它会**向左长出来**。
+                    SwipeActionCell(
+                        action = action,
+                        width = if (isLast && stretchPx > 0f) {
+                            with(density) { (actionWidthPx + stretchPx).toDp() }
+                        } else {
+                            actionWidth
+                        },
+                        highlight = isLast && stretchPx >= deleteTriggerPx,
+                        onDone = ::close,
+                    )
                 }
             }
         }
@@ -111,27 +169,52 @@ fun SwipeableRow(
         Box(
             modifier = Modifier
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-                .pointerInput(rightWidthPx, rightActions.size) {
-                    var velocity = 0f
+                .pointerInput(menuWidthPx, maxStretchPx, rightActions.size) {
+                    var lastDrag = 0f
                     detectHorizontalDragGestures(
                         onHorizontalDrag = { change, dragAmount ->
                             change.consume()
-                            velocity = dragAmount
+                            lastDrag = dragAmount
                             scope.launch {
-                                // 只允许 [-宽度, 0]：向左滑拉开右侧菜单，
-                                // **向右滑就是把菜单推回去（收回）**
-                                val next = (offsetX.value + dragAmount)
-                                    .coerceIn(-rightWidthPx, 0f)
-                                offsetX.snapTo(next)
+                                // 第一级只允许拉到 -menuWidth；
+                                // 已经展开时（第二次左滑）才允许继续拉伸删除按钮。
+                                val lowerBound = if (menuOpen) {
+                                    -(menuWidthPx + maxStretchPx)
+                                } else {
+                                    -menuWidthPx
+                                }
+                                offsetX.snapTo(
+                                    (offsetX.value + dragAmount).coerceIn(lowerBound, 0f)
+                                )
                             }
                         },
                         onDragEnd = {
                             scope.launch {
-                                // 吸附判据：拉出总宽 1/5 或滑动够快即展开，否则收回
-                                val fast = abs(velocity) > 6f
                                 val cur = offsetX.value
-                                val enough = cur < -rightWidthPx / 5f
-                                settleTo(if (enough || fast) -rightWidthPx else 0f)
+                                if (cur <= -menuWidthPx) {
+                                    // —— 第二级：拉伸态 ——
+                                    val extra = -cur - menuWidthPx
+                                    if (extra >= deleteTriggerPx) {
+                                        // 拉够了：先把菜单完全推开，再执行删除
+                                        offsetX.animateTo(
+                                            -(menuWidthPx),
+                                            tween(settleMs, easing = SharpMotion.easing),
+                                        )
+                                        rightActions.lastOrNull()?.onClick?.invoke()
+                                        menuOpen = false
+                                        onOpenChange(false)
+                                    } else {
+                                        settleTo(-menuWidthPx)
+                                    }
+                                } else {
+                                    // —— 第一级：开或关 ——
+                                    // 速度判据**必须带方向**，否则右滑也会被判成展开。
+                                    val flungLeft = lastDrag < -FLING_THRESHOLD
+                                    val enough = cur < -menuWidthPx / 5f
+                                    settleTo(
+                                        if (enough || (flungLeft && cur < 0f)) -menuWidthPx else 0f
+                                    )
+                                }
                             }
                         },
                         onDragCancel = { scope.launch { settleTo(0f) } },
@@ -147,10 +230,8 @@ fun SwipeableRow(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .pointerInput(menuOpen) {
-                            detectTapGestures {
-                                close()
-                            }
+                        .pointerInput(Unit) {
+                            detectTapGestures { close() }
                         },
                 )
             }
@@ -162,7 +243,8 @@ fun SwipeableRow(
 @Composable
 private fun SwipeActionCell(
     action: SwipeAction,
-    width: androidx.compose.ui.unit.Dp,
+    width: Dp,
+    highlight: Boolean,
     onDone: () -> Unit,
 ) {
     Column(
@@ -183,14 +265,14 @@ private fun SwipeActionCell(
         Icon(
             imageVector = action.icon,
             contentDescription = action.label,
-            modifier = Modifier.size(16.dp),
+            modifier = Modifier.size(if (highlight) 20.dp else 17.dp),
             tint = action.contentColor,
         )
-        Spacer(Modifier.height(3.dp))
+        Spacer(Modifier.height(5.dp))
         Text(
             text = action.label,
             color = action.contentColor,
-            fontSize = 10.sp,
+            fontSize = 11.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
