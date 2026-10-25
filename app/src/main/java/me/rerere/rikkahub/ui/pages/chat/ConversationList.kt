@@ -178,8 +178,20 @@ fun ColumnScope.ConversationList(
                     // RikkaRP: 左滑露出「置顶 / 更多 / 删除」，逻辑全部复用原有的回调
                     SwipeableRow(
                         modifier = Modifier.animateItem(),
-                        // 向左滑 → 右侧露出：更多 / 删除
+                        // 向左轻扫 → 右侧露出：置顶 / 更多 / 删除
+                        // （向右轻扫是把菜单推回去收回，不是另一个菜单）
                         rightActions = listOf(
+                            SwipeAction(
+                                label = if (conv.isPinned) {
+                                    stringResource(R.string.chat_page_swipe_unpin)
+                                } else {
+                                    stringResource(R.string.chat_page_swipe_pin)
+                                },
+                                icon = if (conv.isPinned) HugeIcons.PinOff else HugeIcons.Pin,
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                onClick = { onPin(conv) },
+                            ),
                             SwipeAction(
                                 label = stringResource(R.string.chat_page_swipe_more),
                                 icon = HugeIcons.MoreHorizontal,
@@ -193,20 +205,6 @@ fun ColumnScope.ConversationList(
                                 containerColor = MaterialTheme.colorScheme.errorContainer,
                                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
                                 onClick = { onDelete(conv) },
-                            ),
-                        ),
-                        // 向右滑 → 左侧露出：置顶（每项操作只出现一次，避免两侧重复）
-                        leftActions = listOf(
-                            SwipeAction(
-                                label = if (conv.isPinned) {
-                                    stringResource(R.string.chat_page_swipe_unpin)
-                                } else {
-                                    stringResource(R.string.chat_page_swipe_pin)
-                                },
-                                icon = if (conv.isPinned) HugeIcons.PinOff else HugeIcons.Pin,
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                onClick = { onPin(conv) },
                             ),
                         ),
                     ) {
