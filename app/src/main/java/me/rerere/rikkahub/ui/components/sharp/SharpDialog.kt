@@ -303,8 +303,15 @@ class SharpDialogController {
         )
     }
 
-    /** 纯文本选项的重载（无图标）。 */
-    fun showOptions(
+    /**
+     * 纯文本选项的版本（无图标）。
+     *
+     * 刻意**不**叫 showOptions：`List<SharpDialogOption>` 与 `List<String>` 擦除后
+     * 都是 `Ljava/util/List;`，同名重载会报
+     * 「Platform declaration clash: same JVM signature」。
+     * （@JvmName 不能用于成员函数，只能用于顶层函数/属性访问器/file，故改用不同名字。）
+     */
+    fun showTextOptions(
         title: String,
         options: List<String>,
         subtitle: String? = null,
