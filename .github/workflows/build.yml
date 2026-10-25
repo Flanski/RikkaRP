@@ -10,7 +10,6 @@ on:
       - 'NOTICE'
   workflow_dispatch:
 
-# 同一分支重复推送时取消上一次，避免排队
 concurrency:
   group: build-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -18,7 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
 
     steps:
       - name: Checkout
@@ -27,7 +26,7 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      # 子模块是编译必需项：:material3 模块依赖 material-color-utilities。
+      # 子模块是编译必需项：:material3 依赖 material-color-utilities。
       # 缺了会在 :material3:compileReleaseKotlin 报 Unresolved 'dynamiccolor'。
       - name: Verify submodule
         run: |
@@ -42,14 +41,13 @@ jobs:
           fi
           echo "submodule ok: $(git -C material3/material-color-utilities rev-parse --short HEAD)"
 
-      # Android SDK + Gradle 缓存 + compileSdk 37.2 的平台包会吃掉大量空间，
-      # 先清掉 runner 上与本项目无关的大件（.NET / Haskell / 浏览器驱动等）
+      # Gradle 缓存 + Android SDK + compileSdk 37.2 平台包都吃空间，先腾地方
       - name: Free disk space
         run: |
           echo "== before ==" && df -h / | tail -1
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk \
-                      /opt/ghc /opt/hostedtoolcache/CodeQL \
-                      /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost \
+                      /usr/local/lib/android/sdk/ndk \
+                      /usr/local/lib/android/sdk/system-images || true
           sudo apt-get -qq clean || true
           echo "== after ==" && df -h / | tail -1
 
@@ -59,23 +57,43 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      # 项目 compileSdk 为 37 (minorApiLevel 2)，runner 预装里没有，
-      # 需要接受 license 让 AGP 自动下载缺失的平台包。
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # 不用 android-actions/setup-android：
+      # 它内部执行 `sdkmanager tools`，而新版 cmdline-tools 已移除 "tools" 包，
+      # 实测直接报 "Warning: Failed to find package 'tools'" 并 exit 1 让整个 job 失败。
+      # ubuntu-latest 的 runner 已预装 Android SDK，只需接受 license，
+      # 之后由 AGP 自动下载缺失的 platforms;android-37.2 等包。
+      - name: Accept Android SDK licenses
+        run: |
+          set -e
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "ANDROID_HOME=$SDK"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "== 预装内容 =="
+          ls "$SDK" || true
+          SDKMGR=$(ls "$SDK"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | sort -V | tail -1)
+          if [ -z "$SDKMGR" ]; then
+            echo "::error::找不到 sdkmanager"
+            exit 1
+          fi
+          echo "sdkmanager=$SDKMGR"
+          yes | "$SDKMGR" --licenses > /dev/null 2>&1 || true
+          echo "== 已接受的 license =="
+          ls "$SDK/licenses" 2>/dev/null || true
+          echo "== 已安装 platforms =="
+          ls "$SDK/platforms" 2>/dev/null || true
 
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: false
 
-      # 注意：不要在这里传 android.aapt2FromMavenOverride。
-      # 那是 Termux/aarch64 专用（换掉 x86_64 的 aapt2），在 x86_64 的 runner 上
-      # 指向不存在路径会直接失败。CI 用 Maven 默认的 x86_64 aapt2 即可。
+      # 注意：不要传 android.aapt2FromMavenOverride。
+      # 那是 Termux/aarch64 专用（替换 x86_64 的 aapt2），在 x86_64 runner 上
+      # 指向不存在的路径会直接失败。CI 用 Maven 默认的 x86_64 aapt2。
       - name: Build debug APK
         run: |
-          ./gradlew :app:assembleGithubDebug --no-daemon --stacktrace \
-            --warning-mode=summary
+          ./gradlew :app:assembleGithubDebug \
+            --parallel \
+            --stacktrace \
+            -Dorg.gradle.jvmargs="-Xmx6g -Dfile.encoding=UTF-8"
 
       - name: List artifacts
         if: always()
@@ -93,11 +111,3 @@ jobs:
           path: app/build/outputs/apk/github/debug/*.apk
           if-no-files-found: error
           retention-days: 14
-
-      # 失败时把关键错误摘出来，便于在 Actions 页面直接看到
-      - name: Extract errors
-        if: failure()
-        run: |
-          echo "== Kotlin / Gradle 错误摘要 =="
-          grep -aoE "^e: .*" -r . --include=*.log 2>/dev/null | head -40 || true
-          echo "（完整日志见上方 build 步骤）"
