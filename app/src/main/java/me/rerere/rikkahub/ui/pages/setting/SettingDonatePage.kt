@@ -20,6 +20,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
@@ -32,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
+import me.rerere.rikkahub.ui.diag.FlickerTrace
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.remote.SponsorAPI
 import me.rerere.rikkahub.data.model.Sponsor
@@ -47,6 +49,8 @@ import org.koin.compose.koinInject
 
 @Composable
 fun SettingDonatePage() {
+    // RikkaRP 临时诊断：进入本页即开窗记录 4 秒
+    LaunchedEffect(Unit) { FlickerTrace.arm("SettingDonatePage") }
 
     Scaffold(
         topBar = {

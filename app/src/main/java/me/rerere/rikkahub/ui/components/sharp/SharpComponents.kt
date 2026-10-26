@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import me.rerere.rikkahub.ui.theme.sharp.SharpColors
 import me.rerere.rikkahub.ui.theme.sharp.SharpDimens
 import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
+import me.rerere.rikkahub.ui.diag.flickerTraceLayout
 
 /**
  * Sharp 组件族 —— RikkaRP 的共享形态层。
@@ -464,6 +465,8 @@ fun SharpTopBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            // RikkaRP 临时诊断：记录顶栏高度/位置变化（闪烁定位用，事后可删）
+            .flickerTraceLayout("SharpTopBar")
             // 避让系统状态栏：本组件是自绘顶栏，不像 M3 TopAppBar 自带 insets 处理。
             // 背景色要铺到状态栏下面，所以 padding 施加在 Column（含背景）之外，
             // 同时给 Column 背景，使状态栏区域也是顶栏底色。

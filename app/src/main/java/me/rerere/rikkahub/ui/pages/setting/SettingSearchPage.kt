@@ -23,12 +23,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -52,6 +55,9 @@ import me.rerere.rikkahub.ui.components.ui.Tag
 import me.rerere.rikkahub.ui.components.ui.TagType
 import me.rerere.rikkahub.ui.components.ui.longPressReorder
 import me.rerere.rikkahub.ui.context.LocalNavController
+import me.rerere.rikkahub.ui.diag.FlickerTrace
+import me.rerere.rikkahub.ui.diag.flickerTraceDraw
+import me.rerere.rikkahub.ui.diag.flickerTraceLayout
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.plus
@@ -68,6 +74,8 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
+    // RikkaRP 临时诊断：进入本页即开窗记录 4 秒（定位闪烁用，事后可删）
+    LaunchedEffect(Unit) { FlickerTrace.arm("SettingSearchPage") }
     val lazyListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val nav = LocalNavController.current
@@ -257,9 +265,21 @@ private fun SearchProviderCard(
     canDelete: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    // RikkaRP 临时诊断：记录卡片每帧 draw 与布局，以及当帧解析出的颜色
+    val diagContentColor = LocalContentColor.current
+    val diagSurfaceBright = MaterialTheme.colorScheme.surfaceBright
+    val diagSurfaceContainer = MaterialTheme.colorScheme.surfaceContainer
     Card(
         onClick = onEdit,
-        modifier = modifier,
+        modifier = modifier
+            .flickerTraceLayout("searchCard")
+            .flickerTraceDraw("searchCard") {
+                "bright=#%08X content=#%08X container=#%08X".format(
+                    diagSurfaceBright.toArgb(),
+                    diagContentColor.toArgb(),
+                    diagSurfaceContainer.toArgb(),
+                )
+            },
         colors = CardDefaults.cardColors(
             containerColor = CustomColors.listItemColors.containerColor
         )
