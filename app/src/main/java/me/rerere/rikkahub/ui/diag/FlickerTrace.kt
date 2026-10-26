@@ -186,13 +186,17 @@ object FlickerTrace {
                             bytes[p++] = (v ushr 8).toByte()
                             bytes[p++] = v.toByte()
                         }
+                        // n 必须声明在 synchronized 之外才能在外层用；
+                        // 之前写在块内、外层引用 -> CI 报 Unresolved reference 'n'
+                        var reachedMax = false
                         synchronized(lock) {
                             capFrames.add(bytes)
                             capBusy = false
                             val n = capFrames.size
                             if (n == 1 || n % 15 == 0) log("CAP n=$n")
+                            reachedMax = n >= capMaxFrames
                         }
-                        if (n >= capMaxFrames) flushFrames()
+                        if (reachedMax) flushFrames()
                     } else {
                         synchronized(lock) { capBusy = false }
                         log("CAP fail result=$result")
