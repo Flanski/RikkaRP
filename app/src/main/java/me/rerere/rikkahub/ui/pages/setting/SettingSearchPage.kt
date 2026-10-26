@@ -6,6 +6,7 @@ import me.rerere.hugeicons.stroke.Delete01
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -80,11 +81,12 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
     // RikkaRP 诊断 rp.21：必须用 remember 在「首次组合时」就开始记录。
     //   之前用 LaunchedEffect，它要等组合+布局完成才跑，首帧的 draw 早就过去了 ——
     //   这正是前几轮日志里 searchCard 只有 1 次 DRAW 的原因（首帧根本没被记录到）。
-    remember {
+    // ★ LocalContext.current 是 @Composable，只能在这里取；
+    //   remember { } 的 calculation lambda 不是 composable 上下文（踩过第三次了）。
+    val diagActivity = androidx.compose.ui.platform.LocalContext.current.getActivity()
+    remember(diagActivity) {
         FlickerTrace.arm("SettingSearchPage_rp21")
-        FlickerTrace.startWindowCapture(
-            androidx.compose.ui.platform.LocalContext.current.getActivity(), 90
-        )
+        FlickerTrace.startWindowCapture(diagActivity, 90)
         true
     }
     val lazyListState = rememberLazyListState()

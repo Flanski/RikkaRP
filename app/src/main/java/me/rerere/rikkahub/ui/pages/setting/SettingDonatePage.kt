@@ -53,11 +53,12 @@ import androidx.compose.runtime.remember
 @Composable
 fun SettingDonatePage() {
     // RikkaRP 诊断 rp.21（对照组）：保持 CardGroup → Surface 原样，只把记录时机提前到首次组合。
-    remember {
+    // ★ LocalContext.current 是 @Composable，只能在这里取；
+    //   remember { } 的 calculation lambda 不是 composable 上下文（踩过第三次了）。
+    val diagActivity = androidx.compose.ui.platform.LocalContext.current.getActivity()
+    remember(diagActivity) {
         FlickerTrace.arm("SettingDonatePage_rp21")
-        FlickerTrace.startWindowCapture(
-            androidx.compose.ui.platform.LocalContext.current.getActivity(), 90
-        )
+        FlickerTrace.startWindowCapture(diagActivity, 90)
         true
     }
 
