@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.pages.setting
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,6 +68,10 @@ fun SettingDonatePage() {
         },
         containerColor = CustomColors.topBarColors.containerColor,
     ) { paddings ->
+        // RikkaRP 诊断：分层判定。青色 = 内容 Column 这一层
+        androidx.compose.foundation.layout.Box(
+            Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF00FFFF))
+        ) {
         Column(
             modifier = Modifier
                 .padding(paddings)
@@ -88,6 +93,7 @@ fun SettingDonatePage() {
                     .fillMaxWidth()
             )
         }
+        }   // 诊断 Box 结束
     }
 }
 
@@ -96,7 +102,14 @@ private fun DonateMethodsCardGroup() {
     val context = LocalContext.current
     CardGroup(
         modifier = Modifier.fillMaxWidth(),
-        title = { Text(stringResource(R.string.donate_page_donation_methods)) },
+        // RikkaRP 诊断：洋红 = 这个标题自身这一层
+        title = {
+            androidx.compose.foundation.layout.Box(
+                Modifier.background(androidx.compose.ui.graphics.Color(0xFFFF00FF))
+            ) {
+                Text(stringResource(R.string.donate_page_donation_methods))
+            }
+        },
     ) {
         item(
             onClick = { context.openUrl("https://ko-fi.com/reovodev") },

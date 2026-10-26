@@ -4,6 +4,7 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Add01
 import me.rerere.hugeicons.stroke.Delete01
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -111,6 +112,10 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
             }
         }
 
+        // RikkaRP 诊断：分层判定。青色 = LazyColumn 这一层
+        androidx.compose.foundation.layout.Box(
+            Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF00FFFF))
+        ) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -124,6 +129,10 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
                     state = reorderableState,
                     key = service.id
                 ) { isDragging ->
+                    // RikkaRP 诊断：分层判定。洋红 = 卡片这一层；若异常帧是青色说明卡片没画
+                    androidx.compose.foundation.layout.Box(
+                        Modifier.fillMaxWidth().background(androidx.compose.ui.graphics.Color(0xFFFF00FF))
+                    ) {
                     SearchProviderCard(
                         service = service,
                         onEdit = {
@@ -137,6 +146,7 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
                             .animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec())
                             .then(longPressReorder(isDragging))
                     )
+                    }
                 }
             }
 
@@ -151,6 +161,7 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
                 )
             }
         }
+        }   // 诊断 Box 结束
     }
 
     if (showAddDialog) {
