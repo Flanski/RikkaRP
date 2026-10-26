@@ -26,8 +26,8 @@ android {
         minSdk = 26
         targetSdk = 37
         // RikkaRP: 上游 3.1.1 亦为 versionCode 194，本分支递增到 195 以免同码不同内容
-        versionCode = 206
-        versionName = "3.1.1-rp.12"
+        versionCode = 207
+        versionName = "3.1.1-rp.13"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

@@ -120,7 +120,11 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
                         },
                         canDelete = settings.searchServices.size > 1,
                         modifier = Modifier
-                            .animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec())
+                            .animateItem(
+                            fadeInSpec = null,
+                            placementSpec = SharpMotion.spec(),
+                            fadeOutSpec = SharpMotion.spec(),
+                        )
                             .then(longPressReorder(isDragging))
                     )
                 }

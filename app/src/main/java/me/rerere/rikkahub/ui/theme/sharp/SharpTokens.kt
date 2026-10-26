@@ -134,16 +134,16 @@ object SharpDimens {
  * 动效表。SharpUI 的核心手感都在这里。
  */
 object SharpMotion {
-    /** 全局动画基准时长（用户指定：一律 400ms） */
-    const val LinearMs = 400
+    /** 全局动画基准时长（用户指定：一律 300ms） */
+    const val LinearMs = 300
     val easing: Easing = LinearEasing
 
     /**
      * 按下用时（比回弹快，手感干脆）。
      *
-     * 刻意不参与「全局 400ms」：这是一次接触反馈，不是过渡动画。手指按住通常只有
-     * 100–200ms 就抬起，若把它拉到 400ms，动画会在缩到一半时被松手回弹打断，观感是
-     * 「按下去没反应」。若要一并改为 400ms，改这一个常量即可。
+     * 刻意不参与「全局 300ms」：这是一次接触反馈，不是过渡动画。手指按住通常只有
+     * 100–200ms 就抬起，若把它拉到 300ms，动画会在缩到一半时被松手回弹打断，观感是
+     * 「按下去没反应」。若要一并改为 300ms，改这一个常量即可。
      */
     const val PressMs = 90
 
@@ -159,20 +159,20 @@ object SharpMotion {
     /** 开关拖拽时滑块的横向拉伸上限 */
     const val SqueezeScale = 1.14f
 
-    /** 逐字淡入/淡出（时长，当前无使用点；随全局 400ms） */
-    const val CharFadeInMs = 400
-    const val CharFadeOutMs = 400
+    /** 逐字淡入/淡出（时长，当前无使用点；随全局 300ms） */
+    const val CharFadeInMs = 300
+    const val CharFadeOutMs = 300
 
     /** 弹窗展开/收起 */
-    const val DialogMs = 400
+    const val DialogMs = 300
     val dialogEasing: Easing = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)
 
     /**
-     * 全局过渡规格：400ms + SharpUI 缓动。
+     * 全局过渡规格：300ms + SharpUI 缓动。
      *
      * 用来替代 Compose 各组件的默认 spring —— 默认 spring 的停止时刻由 stiffness 决定
-     * （fadeIn 默认 spring(StiffnessMediumLow)，实际约 250–400ms），无法精确等于 400ms。
-     * 凡是需要「和全局一致的 400ms」的地方都用本函数，不要再手写数字。
+     * （fadeIn 默认 spring(StiffnessMediumLow)，实际约 250–300ms），无法精确等于 300ms。
+     * 凡是需要「和全局一致的 300ms」的地方都用本函数，不要再手写数字。
      */
     fun <T> spec(): FiniteAnimationSpec<T> = tween(LinearMs, easing = dialogEasing)
 
@@ -188,7 +188,7 @@ object SharpMotion {
     const val DialogOverscrollDamping = 1f
 
     /** 越界拉动松手后的复位时长。刻意不用弹簧 —— 弹簧会过冲抖动。 */
-    const val DialogOverscrollReturnMs = 400
+    const val DialogOverscrollReturnMs = 300
 
     /** 底部弹窗收起时底边的收缩指数（>1 比顶边收得更快） */
     const val DialogBottomCollapseExponent = 1.6f
@@ -196,10 +196,10 @@ object SharpMotion {
     /** 底部弹窗收起时顶边的收缩指数（<1 相对更慢） */
     const val DialogTopCollapseExponent = 0.7f
 
-    /** 页面切换（与弹窗统一 400ms） */
-    const val PageMs = 400
+    /** 页面切换（与弹窗统一 300ms） */
+    const val PageMs = 300
 
-    /** 列表逐项进场，每项错开（这是「间隔」，不是单段动画时长，故不随 400ms） */
+    /** 列表逐项进场，每项错开（这是「间隔」，不是单段动画时长，故不随 300ms） */
     const val StaggerMs = 28
     /** 进场位移（纵向） */
     val EnterOffset = 12.dp

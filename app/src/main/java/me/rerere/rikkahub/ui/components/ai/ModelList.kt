@@ -575,7 +575,11 @@ private fun ColumnScope.ModelList(
                         onSelect = onSelect,
                         modifier = Modifier
                             .scale(if (isDragging) 0.95f else 1f)
-                            .animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
+                            .animateItem(
+                            fadeInSpec = null,
+                            placementSpec = SharpMotion.spec(),
+                            fadeOutSpec = SharpMotion.spec(),
+                        ),
                         providerSetting = provider,
                         select = model.id == currentModel,
                         onDismiss = {
@@ -671,7 +675,11 @@ private fun ColumnScope.ModelList(
                 ModelItem(
                     model = model,
                     onSelect = onSelect,
-                    modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
+                    modifier = Modifier.animateItem(
+                            fadeInSpec = null,
+                            placementSpec = SharpMotion.spec(),
+                            fadeOutSpec = SharpMotion.spec(),
+                        ),
                     providerSetting = providerSetting,
                     select = currentModel == model.id,
                     onDismiss = {
