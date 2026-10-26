@@ -54,6 +54,7 @@ import me.rerere.rikkahub.ui.components.ui.ItemActionMenu
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.hooks.heroContainer
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.plus
 import me.rerere.rikkahub.utils.toMessageTimeString
 import me.rerere.ui.components.RikkaConfirmDialog
@@ -121,7 +122,7 @@ fun MediaCreationSessionsPage(vm: MediaCreationSessionsVM = koinViewModel()) {
                     onOpen = { open(session.id) },
                     onRename = { renaming = session },
                     onDelete = { deleting = session },
-                    modifier = Modifier.animateItem(),
+                    modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
                 )
             }
         }

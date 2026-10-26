@@ -35,6 +35,7 @@ import me.rerere.hugeicons.stroke.ArrowUp01
 import me.rerere.hugeicons.stroke.Package01
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 
 /**
  * 压缩检查点：分隔线上方的消息仍可查看，但不再发送给模型，由这里的摘要代替。
@@ -85,8 +86,8 @@ fun ChatMessageContextCheckpoint(
 
         AnimatedVisibility(
             visible = expanded,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut(),
+            enter = expandVertically(SharpMotion.spec()) + fadeIn(SharpMotion.spec()),
+            exit = shrinkVertically(SharpMotion.spec()) + fadeOut(SharpMotion.spec()),
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),

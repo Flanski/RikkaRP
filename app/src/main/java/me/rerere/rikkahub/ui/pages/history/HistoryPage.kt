@@ -45,6 +45,7 @@ import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.SwipeToDelete
 import me.rerere.rikkahub.ui.context.LocalNavController
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.navigateToChatPage
 import me.rerere.rikkahub.utils.plus
 import me.rerere.rikkahub.utils.toLocalDateTime
@@ -123,7 +124,7 @@ fun HistoryPage(vm: HistoryVM = koinViewModel()) {
                     onTogglePin = { vm.togglePinStatus(conversation.id) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .animateItem()
+                        .animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec())
                 )
             }
         }

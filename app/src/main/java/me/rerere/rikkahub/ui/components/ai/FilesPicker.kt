@@ -80,6 +80,7 @@ import me.rerere.rikkahub.ui.components.ui.ExtensionSelector
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.hooks.ChatInputState
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.formatNumber
 import me.rerere.workspace.WorkspaceShellStatus
 import org.koin.compose.koinInject
@@ -144,11 +145,11 @@ internal fun FilesPicker(
         targetState = page,
         transitionSpec = {
             if (targetState > initialState) {
-                slideInHorizontally { it } + fadeIn() togetherWith
-                    slideOutHorizontally { -it } + fadeOut()
+                slideInHorizontally(SharpMotion.spec()) { it } + fadeIn(SharpMotion.spec()) togetherWith
+                    slideOutHorizontally(SharpMotion.spec()) { -it } + fadeOut(SharpMotion.spec())
             } else {
-                slideInHorizontally { -it } + fadeIn() togetherWith
-                    slideOutHorizontally { it } + fadeOut()
+                slideInHorizontally(SharpMotion.spec()) { -it } + fadeIn(SharpMotion.spec()) togetherWith
+                    slideOutHorizontally(SharpMotion.spec()) { it } + fadeOut(SharpMotion.spec())
             }
         },
         label = "FilesPickerPage"

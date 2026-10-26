@@ -56,6 +56,7 @@ import me.rerere.rikkahub.data.datastore.getCurrentAssistant
 import me.rerere.rikkahub.ui.hooks.writeStringPreference
 import me.rerere.rikkahub.ui.theme.RikkahubTheme
 import me.rerere.rikkahub.RouteActivity
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.CrashHandler
 import org.koin.android.ext.android.inject
 import kotlin.uuid.Uuid
@@ -244,7 +245,7 @@ private fun AssistantPickerSheet(
                                 onAssistantSelected(assistant.id)
                             }
                         },
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
                         shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(
                             containerColor = if (checked) MaterialTheme.colorScheme.primaryContainer

@@ -91,6 +91,7 @@ import me.rerere.rikkahub.ui.components.ui.TagType
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.hooks.rememberSharedPreferenceString
 import me.rerere.rikkahub.ui.theme.extendColors
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.toDp
 import me.rerere.ui.icons.HeartIcon
 import org.koin.compose.koinInject
@@ -574,7 +575,7 @@ private fun ColumnScope.ModelList(
                         onSelect = onSelect,
                         modifier = Modifier
                             .scale(if (isDragging) 0.95f else 1f)
-                            .animateItem(),
+                            .animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
                         providerSetting = provider,
                         select = model.id == currentModel,
                         onDismiss = {
@@ -670,7 +671,7 @@ private fun ColumnScope.ModelList(
                 ModelItem(
                     model = model,
                     onSelect = onSelect,
-                    modifier = Modifier.animateItem(),
+                    modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
                     providerSetting = providerSetting,
                     select = currentModel == model.id,
                     onDismiss = {

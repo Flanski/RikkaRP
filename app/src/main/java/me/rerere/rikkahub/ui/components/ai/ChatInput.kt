@@ -76,6 +76,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.ui.toast.ToastType
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.CancellationException
@@ -347,8 +348,8 @@ fun ChatInput(
 
                         AnimatedVisibility(
                             visible = !asrState.isRecording,
-                            enter = fadeIn() + scaleIn(),
-                            exit = fadeOut() + scaleOut(),
+                            enter = fadeIn(SharpMotion.spec()) + scaleIn(SharpMotion.spec()),
+                            exit = fadeOut(SharpMotion.spec()) + scaleOut(SharpMotion.spec()),
                         ) {
                             SendButton(
                                 loading = loading,

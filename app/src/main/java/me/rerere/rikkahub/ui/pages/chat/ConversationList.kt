@@ -57,6 +57,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.ConversationSortOrder
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.ui.theme.extendColors
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.mirrorForRtl
 import me.rerere.rikkahub.utils.toLocalString
 import java.time.LocalDate
@@ -166,13 +167,13 @@ fun ColumnScope.ConversationList(
                 is ConversationListItem.DateHeader -> {
                     DateHeaderItem(
                         label = item.label,
-                        modifier = Modifier.animateItem()
+                        modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec())
                     )
                 }
 
                 is ConversationListItem.PinnedHeader -> {
                     PinnedHeader(
-                        modifier = Modifier.animateItem()
+                        modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec())
                     )
                 }
 
@@ -180,7 +181,7 @@ fun ColumnScope.ConversationList(
                     val conv = item.conversation
                     // RikkaRP: 左滑露出「置顶 / 更多 / 删除」，逻辑全部复用原有的回调
                     SwipeableRow(
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
                         isOpen = swipeOpenFor == conv.id,
                         onOpenChange = { open ->
                             swipeOpenFor = if (open) conv.id else {

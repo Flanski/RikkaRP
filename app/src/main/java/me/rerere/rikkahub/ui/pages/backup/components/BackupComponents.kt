@@ -70,6 +70,7 @@ import me.rerere.rikkahub.ui.components.ui.ConnectedChoiceLabel
 import me.rerere.rikkahub.ui.components.ui.ConnectedMultiChoiceButtons
 import me.rerere.rikkahub.ui.components.ui.cardGroupItemShape
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.UiState
 import me.rerere.rikkahub.utils.fileSizeToString
 import me.rerere.rikkahub.utils.toLocalDateTime
@@ -189,8 +190,8 @@ internal fun RemoteBackupLayout(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .offset(y = -ScreenOffset),
-            enter = fadeIn() + scaleIn(initialScale = 0.8f),
-            exit = fadeOut() + scaleOut(targetScale = 0.8f),
+            enter = fadeIn(SharpMotion.spec()) + scaleIn(initialScale = 0.8f),
+            exit = fadeOut(SharpMotion.spec()) + scaleOut(targetScale = 0.8f),
         ) {
             HorizontalFloatingToolbar(
                 expanded = expanded,

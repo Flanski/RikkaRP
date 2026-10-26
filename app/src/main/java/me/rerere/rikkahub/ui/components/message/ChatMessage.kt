@@ -94,6 +94,7 @@ import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.context.LocalWorkspaceId
 import me.rerere.rikkahub.ui.theme.LocalChatFontFamily
 import me.rerere.rikkahub.ui.theme.rememberChatFontFamily
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.JsonInstant
 import me.rerere.rikkahub.utils.openUrl
 import me.rerere.rikkahub.utils.urlDecode
@@ -212,7 +213,7 @@ fun ChatMessage(
                 fadeOut(motionScheme.fastEffectsSpec())
         ) {
             Column(
-                modifier = Modifier.animateContentSize()
+                modifier = Modifier.animateContentSize(SharpMotion.spec())
             ) {
                 ChatMessageActionButtons(
                     message = message,
@@ -339,7 +340,7 @@ private fun MessagePartsBlock(
                 if (block.steps.isNotEmpty()) {
                     val isReasoningOnlyBlock = block.steps.fastAll { it is ThinkingStep.ReasoningStep }
                     ChainOfThought(
-                        modifier = Modifier.animateContentSize(),
+                        modifier = Modifier.animateContentSize(SharpMotion.spec()),
                         steps = block.steps,
                         collapsedAdaptiveWidth = isReasoningOnlyBlock,
                         cardColors = CardDefaults.cardColors(
@@ -397,7 +398,7 @@ private fun MessagePartsBlock(
                                     // 用户气泡不占满整行，和助手的回复错开
                                     modifier = Modifier
                                         .padding(start = 24.dp)
-                                        .animateContentSize(),
+                                        .animateContentSize(SharpMotion.spec()),
                                 ) {
                                     MarkdownBlock(
                                         content = part.text.replaceRegexes(
@@ -413,7 +414,7 @@ private fun MessagePartsBlock(
                                     ChatMessageBubble(
                                         role = role,
                                         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = settings.displaySetting.bubbleOpacity),
-                                        modifier = Modifier.animateContentSize(),
+                                        modifier = Modifier.animateContentSize(SharpMotion.spec()),
                                     ) {
                                         MarkdownBlock(
                                             content = part.text.replaceRegexes(
@@ -433,7 +434,7 @@ private fun MessagePartsBlock(
                                         ),
                                         onClickCitation = handleClickCitation,
                                         modifier = Modifier
-                                            .animateContentSize()
+                                            .animateContentSize(SharpMotion.spec())
                                     )
                                 }
                             }

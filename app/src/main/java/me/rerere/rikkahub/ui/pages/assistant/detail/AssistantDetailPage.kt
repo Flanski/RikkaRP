@@ -60,6 +60,7 @@ import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.hooks.heroAnimation
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -87,8 +88,8 @@ fun AssistantDetailPage(id: String) {
                 title = {
                     AnimatedVisibility(
                         visible = showTitle,
-                        enter = fadeIn() + slideInVertically { it / 2 },
-                        exit = fadeOut() + slideOutVertically { it / 2 },
+                        enter = fadeIn(SharpMotion.spec()) + slideInVertically(SharpMotion.spec()) { it / 2 },
+                        exit = fadeOut(SharpMotion.spec()) + slideOutVertically(SharpMotion.spec()) { it / 2 },
                     ) {
                         Text(
                             text = name,

@@ -77,6 +77,7 @@ import me.rerere.rikkahub.ui.theme.AtomOneDarkPalette
 import me.rerere.rikkahub.ui.theme.AtomOneLightPalette
 import me.rerere.rikkahub.ui.theme.JetbrainsMono
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.toDp
 import me.rerere.ui.webview.WebView
 import me.rerere.ui.webview.WebViewContentCache
@@ -341,7 +342,7 @@ private fun CodeBlockDefault(
             CodeHighlightText(
                 code = displayCode,
                 language = language,
-                modifier = Modifier.animateContentSize(),
+                modifier = Modifier.animateContentSize(SharpMotion.spec()),
                 fontSize = textStyle.fontSize,
                 lineHeight = textStyle.lineHeight,
                 colors = colorPalette,

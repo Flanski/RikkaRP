@@ -1,7 +1,6 @@
 package me.rerere.rikkahub.ui.pages.chat
 
 import androidx.compose.foundation.background
-import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +41,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.ui.components.sharp.SharpDivider
 import me.rerere.rikkahub.ui.context.Navigator
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 
 /**
  * 消息页底部导航栏（SharpUI 风格）。

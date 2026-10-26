@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 
 // 连接式单选按钮组，选中项更宽；选项不多（两到四个）时用来代替下拉框
 @Composable
@@ -139,8 +140,8 @@ fun ConnectedChoiceLabel(
     if (icon != null) {
         AnimatedVisibility(
             visible = selected,
-            enter = expandHorizontally(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeIn(),
-            exit = shrinkHorizontally(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(),
+            enter = expandHorizontally(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeIn(SharpMotion.spec()),
+            exit = shrinkHorizontally(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(SharpMotion.spec()),
         ) {
             Row {
                 Icon(

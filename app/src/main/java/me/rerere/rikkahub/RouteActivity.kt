@@ -13,7 +13,6 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.unit.IntOffset
-import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.fadeIn
@@ -61,6 +60,7 @@ import coil3.network.cachecontrol.CacheControlCacheStrategy
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.ui.toast.Toaster
 import me.rerere.ui.toast.rememberToasterState
 import kotlinx.coroutines.launch
@@ -339,7 +339,7 @@ class RouteActivity : ComponentActivity() {
                         // 同一帧内连续两次返回时 NavDisplay 的返回状态还没更新，会多回调一次，不加判断会把栈弹空
                         onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
                         // RikkaRP: 全部显式指定 tween —— 原来 slideInHorizontally { it }
-                        // 没传 animationSpec，用的是默认 spring，时长与弹窗的 250ms 对不上。
+                        // 没传 animationSpec，用的是默认 spring，时长与弹窗的 400ms 对不上。
                         // ────────────────────────────────────────────────────────────
                         // 页面转场：照搬 Litchi(Cyrene) MainScreen.kt 的 sharedAxisX
                         //
@@ -640,8 +640,8 @@ class RouteActivity : ComponentActivity() {
                     }
                     AnimatedVisibility(
                         visible = migrationState is MigrationState.Migrating,
-                        enter = fadeIn(),
-                        exit = fadeOut(),
+                        enter = fadeIn(SharpMotion.spec()),
+                        exit = fadeOut(SharpMotion.spec()),
                         modifier = Modifier.fillMaxSize()
                     ) {
                         val state = migrationState as? MigrationState.Migrating

@@ -106,6 +106,7 @@ import me.rerere.rikkahub.ui.components.message.ChatMessage
 import me.rerere.rikkahub.ui.components.ui.ErrorCardsDisplay
 import me.rerere.rikkahub.ui.hooks.ImeLazyListAutoScroller
 import me.rerere.rikkahub.ui.theme.ChatFontProvider
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.plus
 import me.rerere.ui.components.ListSelectableItem
 import me.rerere.ui.components.Tooltip
@@ -147,7 +148,7 @@ fun ChatList(
         targetState = previewMode,
         label = "ChatListMode",
         transitionSpec = {
-            (fadeIn() + scaleIn(initialScale = 0.8f) togetherWith fadeOut() + scaleOut(targetScale = 0.8f))
+            (fadeIn(SharpMotion.spec()) + scaleIn(initialScale = 0.8f) togetherWith fadeOut(SharpMotion.spec()) + scaleOut(targetScale = 0.8f))
         }
     ) { target ->
         if (target) {

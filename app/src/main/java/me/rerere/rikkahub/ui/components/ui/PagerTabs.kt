@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import kotlinx.coroutines.launch
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 
 internal interface PagerTab {
     val icon: ImageVector
@@ -85,8 +86,8 @@ internal fun PagerTabs(
             ) {
                 AnimatedVisibility(
                     visible = selected,
-                    enter = expandHorizontally(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeIn(),
-                    exit = shrinkHorizontally(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(),
+                    enter = expandHorizontally(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeIn(SharpMotion.spec()),
+                    exit = shrinkHorizontally(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(SharpMotion.spec()),
                 ) {
                     Row {
                         Icon(

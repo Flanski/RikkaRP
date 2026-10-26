@@ -12,7 +12,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -48,6 +47,7 @@ import me.rerere.rikkahub.R
 import me.rerere.asr.ASRStatus
 import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.Voice
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 
 private enum class AsrDisplayState {
     Idle, Connecting, Active
@@ -103,7 +103,8 @@ internal fun AsrButton(
         AnimatedContent(
             targetState = displayState,
             transitionSpec = {
-                (fadeIn(tween(200)) togetherWith fadeOut(tween(200)))
+                (fadeIn(tween(SharpMotion.LinearMs, easing = SharpMotion.easing)) togetherWith
+                    fadeOut(tween(SharpMotion.LinearMs, easing = SharpMotion.easing)))
                     .using(SizeTransform(clip = false))
             },
             label = "asr_content_switch"

@@ -55,6 +55,7 @@ import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.ui.theme.JetbrainsMono
 import me.rerere.rikkahub.ui.theme.LocalDarkMode
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.plus
 import me.rerere.search.DoubaoSearchMode
 import me.rerere.search.SearchCommonOptions
@@ -126,7 +127,7 @@ fun SettingSearchDetailPage(
                 ) {
                     Column(
                         modifier = Modifier
-                            .animateContentSize()
+                            .animateContentSize(SharpMotion.spec())
                             .fillMaxWidth()
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -243,7 +244,7 @@ private fun SearchTestSection(
     ) {
         Column(
             modifier = Modifier
-                .animateContentSize()
+                .animateContentSize(SharpMotion.spec())
                 .fillMaxWidth()
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)

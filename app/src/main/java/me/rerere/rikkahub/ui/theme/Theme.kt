@@ -4,7 +4,7 @@ import android.os.Build
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.animation.core.FiniteAnimationSpec
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import kotlinx.serialization.Serializable
 import me.rerere.rikkahub.ui.hooks.rememberAmoledDarkMode
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.ui.theme.sharp.SharpPalette
 import me.rerere.rikkahub.ui.theme.sharp.SharpShapes
 import me.rerere.rikkahub.ui.theme.sharp.SharpTheme
@@ -61,23 +62,35 @@ enum class ColorMode {
  * 不做「非零 -> 零」的插值，否则此崩溃会复现。
  */
 private val SharpMotionScheme = object : MotionScheme {
+    // RikkaRP: 全局过渡时长统一 400ms（用户指定）。
+    //
+    // 原先这里是临界阻尼弹簧（dampingRatio = 1f + 各自 stiffness）。弹簧的「停止时刻」
+    // 由 stiffness 决定、无法精确指定时长（同样的 stiffness 对不同距离的位移耗时不同），
+    // 所以改为 tween(SharpMotion.LinearMs) —— 时长恒定、可预期。
+    // tween 的进度恒在 [0, 1] 内，同样不会过冲，因此上面 KDoc 提到的
+    // 「负角半径崩溃」不会因为这次改动而复现。
+    //
+    // 六个槽位的时长一律相同（用户要求全量 400ms）。按 Material 语义本可以让
+    // fast/default/slow 有别，但那是「弹簧刚度分层」，换成固定时长后若再分档，
+    // 就与「全量 400ms」相违，故统一。
+    // 缓动沿用 SharpUI 的 cubic-bezier(0.4, 0, 0.2, 1)（= FastOutSlowIn）。
     override fun <T> defaultSpatialSpec(): FiniteAnimationSpec<T> =
-        spring(dampingRatio = 1f, stiffness = 700f)
+        tween(SharpMotion.LinearMs, easing = SharpMotion.dialogEasing)
 
     override fun <T> fastSpatialSpec(): FiniteAnimationSpec<T> =
-        spring(dampingRatio = 1f, stiffness = 1400f)
+        tween(SharpMotion.LinearMs, easing = SharpMotion.dialogEasing)
 
     override fun <T> slowSpatialSpec(): FiniteAnimationSpec<T> =
-        spring(dampingRatio = 1f, stiffness = 300f)
+        tween(SharpMotion.LinearMs, easing = SharpMotion.dialogEasing)
 
     override fun <T> defaultEffectsSpec(): FiniteAnimationSpec<T> =
-        spring(dampingRatio = 1f, stiffness = 1600f)
+        tween(SharpMotion.LinearMs, easing = SharpMotion.dialogEasing)
 
     override fun <T> fastEffectsSpec(): FiniteAnimationSpec<T> =
-        spring(dampingRatio = 1f, stiffness = 3800f)
+        tween(SharpMotion.LinearMs, easing = SharpMotion.dialogEasing)
 
     override fun <T> slowEffectsSpec(): FiniteAnimationSpec<T> =
-        spring(dampingRatio = 1f, stiffness = 800f)
+        tween(SharpMotion.LinearMs, easing = SharpMotion.dialogEasing)
 }
 
 @Composable

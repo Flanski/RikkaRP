@@ -65,6 +65,7 @@ import me.rerere.rikkahub.ui.pages.setting.components.MediaGenerationProviderBas
 import me.rerere.rikkahub.ui.pages.setting.components.MediaGenerationProviderModelsConfigure
 import me.rerere.rikkahub.ui.pages.setting.components.typeName
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.ui.components.RikkaConfirmDialog
 import me.rerere.ui.toast.ToastType
 import org.koin.androidx.compose.koinViewModel
@@ -189,8 +190,8 @@ fun SettingMediaProviderDetailPage(id: Uuid, vm: SettingVM = koinViewModel()) {
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .offset(y = -ScreenOffset),
-                enter = fadeIn() + scaleIn(initialScale = 0.8f),
-                exit = fadeOut() + scaleOut(targetScale = 0.8f),
+                enter = fadeIn(SharpMotion.spec()) + scaleIn(initialScale = 0.8f),
+                exit = fadeOut(SharpMotion.spec()) + scaleOut(targetScale = 0.8f),
             ) {
                 HorizontalFloatingToolbar(
                     expanded = expanded,

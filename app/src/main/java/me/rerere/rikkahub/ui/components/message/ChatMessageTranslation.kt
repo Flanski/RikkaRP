@@ -53,6 +53,7 @@ import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.ai.TranslationLanguages
 import me.rerere.rikkahub.ui.components.ai.translationLanguageName
 import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import java.util.Locale
 
 @Composable
@@ -198,8 +199,8 @@ fun CollapsibleTranslationText(
         // Translation content (collapsible)
         AnimatedVisibility(
             visible = !isCollapsed,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
+            enter = expandVertically(SharpMotion.spec()) + fadeIn(SharpMotion.spec()),
+            exit = shrinkVertically(SharpMotion.spec()) + fadeOut(SharpMotion.spec())
         ) {
             Card(
                 modifier = Modifier
@@ -253,7 +254,7 @@ fun CollapsibleTranslationText(
                         onClickCitation = onClickCitation,
                         modifier = Modifier
                             .padding(12.dp)
-                            .animateContentSize()
+                            .animateContentSize(SharpMotion.spec())
                     )
                 }
             }

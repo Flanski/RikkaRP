@@ -67,6 +67,7 @@ import me.rerere.rikkahub.data.datastore.findProvider
 import me.rerere.rikkahub.ui.components.ui.AutoAIIcon
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.pages.setting.SearchAbilityTagLine
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 
 enum class SearchMode {
     OFF,
@@ -264,8 +265,8 @@ private fun SearchPicker(
                 ) {
                     AnimatedVisibility(
                         visible = selected,
-                        enter = expandHorizontally(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeIn(),
-                        exit = shrinkHorizontally(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(),
+                        enter = expandHorizontally(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeIn(SharpMotion.spec()),
+                        exit = shrinkHorizontally(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(SharpMotion.spec()),
                     ) {
                         Row {
                             Icon(
@@ -294,8 +295,8 @@ private fun SearchPicker(
 
         AnimatedVisibility(
             visible = currentMode == SearchMode.LOCAL,
-            enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeIn(),
-            exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(),
+            enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeIn(SharpMotion.spec()),
+            exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(SharpMotion.spec()),
         ) {
             SegmentedListItem(
                 onClick = onSelectProvider,

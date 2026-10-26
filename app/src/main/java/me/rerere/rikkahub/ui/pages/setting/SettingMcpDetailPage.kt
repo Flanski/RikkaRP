@@ -90,6 +90,7 @@ import me.rerere.rikkahub.ui.components.ui.TagType
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.ui.components.FormItem
 import me.rerere.ui.components.RikkaConfirmDialog
 import me.rerere.ui.components.Switch
@@ -268,8 +269,8 @@ private fun McpBasicSettingsTab(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .offset(y = -ScreenOffset),
-            enter = fadeIn() + scaleIn(initialScale = 0.8f),
-            exit = fadeOut() + scaleOut(targetScale = 0.8f),
+            enter = fadeIn(SharpMotion.spec()) + scaleIn(initialScale = 0.8f),
+            exit = fadeOut(SharpMotion.spec()) + scaleOut(targetScale = 0.8f),
         ) {
             HorizontalFloatingToolbar(
                 expanded = expanded,
@@ -687,7 +688,7 @@ private fun McpToolCard(
     ) {
         Column(
             modifier = Modifier
-                .animateContentSize()
+                .animateContentSize(SharpMotion.spec())
                 .fillMaxWidth()
                 .padding(8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),

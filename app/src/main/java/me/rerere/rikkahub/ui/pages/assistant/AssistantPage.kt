@@ -82,6 +82,7 @@ import me.rerere.rikkahub.ui.hooks.heroAnimation
 import me.rerere.rikkahub.ui.hooks.useEditState
 import me.rerere.rikkahub.ui.pages.assistant.detail.AssistantImporter
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.ui.components.RikkaConfirmDialog
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
@@ -228,7 +229,7 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .animateItem()
+                                .animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec())
                                 .then(longPressReorder(isDragging, enabled = !isFiltering))
                         )
                     }

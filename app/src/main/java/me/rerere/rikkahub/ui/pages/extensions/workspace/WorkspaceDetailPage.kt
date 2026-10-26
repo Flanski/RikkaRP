@@ -126,6 +126,7 @@ import me.rerere.rikkahub.ui.components.ui.cardGroupItemShape
 import me.rerere.rikkahub.ui.components.ui.switchItem
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.fileSizeToString
 import me.rerere.rikkahub.utils.writeClipboardText
 import me.rerere.ui.components.RikkaConfirmDialog
@@ -822,8 +823,8 @@ private fun WorkspaceFilesPage(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .offset(y = -ScreenOffset),
-            enter = fadeIn() + scaleIn(initialScale = 0.8f),
-            exit = fadeOut() + scaleOut(targetScale = 0.8f),
+            enter = fadeIn(SharpMotion.spec()) + scaleIn(initialScale = 0.8f),
+            exit = fadeOut(SharpMotion.spec()) + scaleOut(targetScale = 0.8f),
         ) {
             HorizontalFloatingToolbar(
                 expanded = true,

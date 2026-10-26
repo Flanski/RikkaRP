@@ -45,6 +45,7 @@ import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.service.ChatError
 import me.rerere.rikkahub.service.ChatErrorSolution
 import me.rerere.rikkahub.ui.context.LocalNavController
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import kotlin.uuid.Uuid
 
 @Composable
@@ -57,8 +58,8 @@ fun ErrorCardsDisplay(
     AnimatedVisibility(
         visible = errors.isNotEmpty(),
         modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(SharpMotion.spec()),
+        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(SharpMotion.spec()),
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),

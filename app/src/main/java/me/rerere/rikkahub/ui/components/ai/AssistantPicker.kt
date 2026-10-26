@@ -50,6 +50,7 @@ import me.rerere.rikkahub.data.model.Assistant
 import me.rerere.rikkahub.ui.components.ui.UIAvatar
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.hooks.rememberAssistantState
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import kotlin.uuid.Uuid
 
 @Composable
@@ -184,7 +185,7 @@ private fun AssistantPickerSheet(
                     val checked = assistant.id == currentAssistant.id
                     Card(
                         onClick = { onAssistantSelected(assistant) },
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
                         shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(
                             containerColor = if (checked) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,

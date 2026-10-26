@@ -40,10 +40,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 
 /** 轻扫露出的一个操作项。 */
 data class SwipeAction(

@@ -65,6 +65,7 @@ import me.rerere.rikkahub.ui.components.ui.ItemAction
 import me.rerere.rikkahub.ui.components.ui.ItemActionMenu
 import me.rerere.rikkahub.ui.context.LocalToaster
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.fileSizeToString
 import me.rerere.rikkahub.utils.plus
 import me.rerere.ui.components.RikkaConfirmDialog
@@ -107,8 +108,8 @@ fun SkillDetailPage(skillName: String) {
         floatingActionButton = {
             AnimatedVisibility(
                 visible = fabVisible && !readOnly,
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut(),
+                enter = fadeIn(SharpMotion.spec()) + scaleIn(SharpMotion.spec()),
+                exit = fadeOut(SharpMotion.spec()) + scaleOut(SharpMotion.spec()),
             ) {
                 FloatingActionButton(onClick = { showAddDialog = true }) {
                     Icon(HugeIcons.Add01, contentDescription = null)

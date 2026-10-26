@@ -76,7 +76,8 @@ fun Switch(
         } else {
             0.dp
         },
-        animationSpec = tween(durationMillis = 150),
+        // RikkaRP: 全局动画时长统一 400ms（ui 模块不依赖 app 模块的 SharpMotion，故写字面量）
+        animationSpec = tween(durationMillis = 400),
         label = "thumbOffset"
     )
 

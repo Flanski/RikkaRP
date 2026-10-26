@@ -9,7 +9,9 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
@@ -65,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.ui.toast.ToastType
 import kotlinx.coroutines.launch
 import me.rerere.ai.provider.ModelType
@@ -153,7 +156,7 @@ fun TranslatorPage(vm: TranslatorVM = koinViewModel()) {
             ) {
                 if (modelMissing) {
                     item(key = "model_missing") {
-                        ModelMissingTip(modifier = Modifier.animateItem())
+                        ModelMissingTip(modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()))
                     }
                 }
 
@@ -195,7 +198,7 @@ fun TranslatorPage(vm: TranslatorVM = koinViewModel()) {
                     item(key = "history_header") {
                         TranslationHistoryHeader(
                             onClear = vm::clearHistory,
-                            modifier = Modifier.animateItem(),
+                            modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
                         )
                     }
                 }
@@ -212,7 +215,7 @@ fun TranslatorPage(vm: TranslatorVM = koinViewModel()) {
                             scope.launch { listState.animateScrollToItem(0) }
                         },
                         onDelete = { vm.deleteHistory(entry) },
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
                     )
                 }
             }
@@ -264,7 +267,7 @@ private fun InputCard(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.animateContentSize()) {
+        Column(modifier = Modifier.animateContentSize(SharpMotion.spec())) {
             TextField(
                 value = text,
                 onValueChange = onTextChange,
@@ -296,8 +299,8 @@ private fun InputCard(
                 Spacer(Modifier.weight(1f))
                 AnimatedVisibility(
                     visible = text.isNotEmpty(),
-                    enter = fadeIn(),
-                    exit = fadeOut(),
+                    enter = fadeIn(SharpMotion.spec()),
+                    exit = fadeOut(SharpMotion.spec()),
                 ) {
                     IconButton(onClick = { onTextChange("") }) {
                         Icon(HugeIcons.Cancel01, contentDescription = stringResource(R.string.translator_page_clear_input))
@@ -322,7 +325,12 @@ private fun ResultCard(
 ) {
     val hasResult = text.isNotBlank()
     val containerColor by animateColorAsState(
-        if (hasResult) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow
+        targetValue = if (hasResult) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        },
+        animationSpec = SharpMotion.spec(),
     )
 
     Surface(
@@ -332,7 +340,7 @@ private fun ResultCard(
     ) {
         Column(
             modifier = Modifier
-                .animateContentSize()
+                .animateContentSize(SharpMotion.spec())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -364,8 +372,8 @@ private fun ResultCard(
 
             AnimatedVisibility(
                 visible = hasResult && !translating,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically(),
+                enter = fadeIn(SharpMotion.spec()) + expandVertically(SharpMotion.spec()),
+                exit = fadeOut(SharpMotion.spec()) + shrinkVertically(SharpMotion.spec()),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -411,7 +419,13 @@ private fun TranslateToolbar(
                     }
                 },
             ) {
-                AnimatedContent(translating) { isTranslating ->
+                AnimatedContent(
+                    targetState = translating,
+                    transitionSpec = {
+                        (fadeIn(SharpMotion.spec()) + scaleIn(SharpMotion.spec(), initialScale = 0.92f))
+                            .togetherWith(fadeOut(SharpMotion.spec()))
+                    },
+                ) { isTranslating ->
                     if (isTranslating) {
                         Icon(HugeIcons.Stop, contentDescription = stringResource(R.string.translator_page_cancel))
                     } else {

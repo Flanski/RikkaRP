@@ -43,6 +43,7 @@ import me.rerere.hugeicons.HugeIcons
 import me.rerere.hugeicons.stroke.ArrowDown01
 import me.rerere.hugeicons.stroke.ArrowRight01
 import me.rerere.rikkahub.ui.theme.JetbrainsMono
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 
 @Composable
 fun JsonTree(
@@ -138,8 +139,8 @@ private fun JsonObjectNode(
 
         AnimatedVisibility(
             visible = expanded,
-            enter = expandVertically(),
-            exit = shrinkVertically()
+            enter = expandVertically(SharpMotion.spec()),
+            exit = shrinkVertically(SharpMotion.spec())
         ) {
             Column {
                 entries.forEach { (childKey, childElement) ->
@@ -201,8 +202,8 @@ private fun JsonArrayNode(
 
         AnimatedVisibility(
             visible = expanded,
-            enter = expandVertically(),
-            exit = shrinkVertically()
+            enter = expandVertically(SharpMotion.spec()),
+            exit = shrinkVertically(SharpMotion.spec())
         ) {
             Column {
                 array.forEachIndexed { index, childElement ->

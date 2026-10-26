@@ -50,6 +50,7 @@ import me.rerere.rikkahub.ui.components.richtext.MarkdownBlock
 import me.rerere.rikkahub.ui.components.ui.ChainOfThoughtScope
 import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.modifier.shimmer
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.extractThinkingTitle
 import kotlin.time.Clock
 import kotlin.time.Duration
@@ -265,8 +266,8 @@ private fun ReasoningTitle(title: String) {
     AnimatedContent(
         targetState = title,
         transitionSpec = {
-            (slideInVertically { height -> height } + fadeIn()).togetherWith(
-                slideOutVertically { height -> -height } + fadeOut()
+            (slideInVertically(SharpMotion.spec()) { height -> height } + fadeIn(SharpMotion.spec())).togetherWith(
+                slideOutVertically(SharpMotion.spec()) { height -> -height } + fadeOut(SharpMotion.spec())
             )
         }
     ) {
