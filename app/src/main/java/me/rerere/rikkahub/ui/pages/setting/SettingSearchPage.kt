@@ -70,12 +70,18 @@ import me.rerere.ui.components.RikkaConfirmDialog
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import me.rerere.rikkahub.utils.getActivity
 
 @Composable
 fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     // RikkaRP 临时诊断：进入本页即开窗记录 4 秒（定位闪烁用，事后可删）
-    LaunchedEffect(Unit) { FlickerTrace.arm("SettingSearchPage") }
+    val diagActivity = androidx.compose.ui.platform.LocalContext.current.getActivity()
+    LaunchedEffect(Unit) {
+        FlickerTrace.arm("SettingSearchPage")
+        // RikkaRP 临时诊断：逐帧抓窗口顶部（见 ui/diag/FlickerTrace.kt）
+        FlickerTrace.startWindowCapture(diagActivity, 60)
+    }
     val lazyListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val nav = LocalNavController.current

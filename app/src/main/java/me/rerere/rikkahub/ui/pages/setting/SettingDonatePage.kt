@@ -46,11 +46,17 @@ import me.rerere.rikkahub.utils.onLoading
 import me.rerere.rikkahub.utils.onSuccess
 import me.rerere.rikkahub.utils.openUrl
 import org.koin.compose.koinInject
+import me.rerere.rikkahub.utils.getActivity
 
 @Composable
 fun SettingDonatePage() {
     // RikkaRP 临时诊断：进入本页即开窗记录 4 秒
-    LaunchedEffect(Unit) { FlickerTrace.arm("SettingDonatePage") }
+    val diagActivity = androidx.compose.ui.platform.LocalContext.current.getActivity()
+    LaunchedEffect(Unit) {
+        FlickerTrace.arm("SettingDonatePage")
+        // RikkaRP 临时诊断：逐帧抓窗口顶部（见 ui/diag/FlickerTrace.kt）
+        FlickerTrace.startWindowCapture(diagActivity, 60)
+    }
 
     Scaffold(
         topBar = {

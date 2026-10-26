@@ -9,6 +9,7 @@ import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -350,34 +351,46 @@ class RouteActivity : ComponentActivity() {
                         // 只有新页从屏幕右缘之外整屏滑入并淡入。因为 target 绘制在上层，
                         // 静止的旧页被新页逐渐盖住，观感是干脆的整页推进，全程无重影。
                         // ────────────────────────────────────────────────────────────
+                        // ★★ RikkaRP 诊断版（rp.16-diag）：转场暂时改为「瞬时切换」★★
+                        //
+                        // 目的：一次性判断「进入子页后顶部内容闪一下」到底来自哪里。
+                        //   · 关掉转场后**不再闪** -> 问题在转场（layer 平移 + 首帧合成）
+                        //   · 关掉转场后**照旧闪** -> 问题在页面自身的首帧测量
+                        //
+                        // 这只是诊断，不是最终形态。原来的滑动实现留在下方注释里，
+                        // 定因后按需恢复（并把 PageMs 用回去）。
                         transitionSpec = {
-                            val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                            if (backStack.size == 1) {
-                                fadeIn(fade) togetherWith fadeOut(fade)
-                            } else {
-                                (slideInHorizontally(slide) { it } + fadeIn(fade)) togetherWith
-                                    ExitTransition.None
-                            }
+                            EnterTransition.None togetherWith ExitTransition.None
                         },
                         popTransitionSpec = {
-                            val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                            // 返回：子页向右整屏滑出并淡出。
-                            // Litchi 这里用 EnterTransition.None（父页静止），并靠 zIndex 让子页
-                            // 始终处于上层；而 Nav3 的 NavDisplay 不暴露 zIndex，
-                            // 父页一旦完全静止且不透明就会把子页整个盖住、看不到滑出过程。
-                            // 因此父页改为从左侧轻微滑回（-it/4，**不带任何淡入**）：
-                            // 仍然全程不透明、无渐变感，同时保证子页滑出可见。
-                            (slideInHorizontally(slide) { -it / 4 }) togetherWith
-                                (slideOutHorizontally(slide) { it } + fadeOut(fade))
+                            EnterTransition.None togetherWith ExitTransition.None
                         },
                         predictivePopTransitionSpec = {
-                            val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                            (slideInHorizontally(slide) { -it / 4 }) togetherWith
-                                (slideOutHorizontally(slide) { it } + fadeOut(fade))
+                            EnterTransition.None togetherWith ExitTransition.None
                         },
+                        // ---- 诊断前的写法（保留备查）----
+                        // transitionSpec = {
+                        //     val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                        //     val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                        //     if (backStack.size == 1) {
+                        //         fadeIn(fade) togetherWith fadeOut(fade)
+                        //     } else {
+                        //         (slideInHorizontally(slide) { it } + fadeIn(fade)) togetherWith
+                        //             ExitTransition.None
+                        //     }
+                        // },
+                        // popTransitionSpec = {
+                        //     val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                        //     val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                        //     (slideInHorizontally(slide) { -it / 4 }) togetherWith
+                        //         (slideOutHorizontally(slide) { it } + fadeOut(fade))
+                        // },
+                        // predictivePopTransitionSpec = {
+                        //     val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                        //     val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                        //     (slideInHorizontally(slide) { -it / 4 }) togetherWith
+                        //         (slideOutHorizontally(slide) { it } + fadeOut(fade))
+                        // },
                         entryProvider = entryProvider {
                             // RikkaRP: 上游原版把对话页设为淡入淡出（当时对话页是唯一的首屏，
                             // 淡入无感）。改成多页后，从消息页进入对话页会变成「渐变」，
