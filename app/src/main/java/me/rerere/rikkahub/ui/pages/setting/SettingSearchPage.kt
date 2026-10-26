@@ -72,16 +72,20 @@ import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import me.rerere.rikkahub.utils.getActivity
+import androidx.compose.foundation.clickable
 
 @Composable
 fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
-    // RikkaRP 临时诊断：进入本页即开窗记录 4 秒（定位闪烁用，事后可删）
-    val diagActivity = androidx.compose.ui.platform.LocalContext.current.getActivity()
-    LaunchedEffect(Unit) {
-        FlickerTrace.arm("SettingSearchPage")
-        // RikkaRP 临时诊断：逐帧抓窗口顶部（见 ui/diag/FlickerTrace.kt）
-        FlickerTrace.startWindowCapture(diagActivity, 60)
+    // RikkaRP 诊断 rp.21：必须用 remember 在「首次组合时」就开始记录。
+    //   之前用 LaunchedEffect，它要等组合+布局完成才跑，首帧的 draw 早就过去了 ——
+    //   这正是前几轮日志里 searchCard 只有 1 次 DRAW 的原因（首帧根本没被记录到）。
+    remember {
+        FlickerTrace.arm("SettingSearchPage_rp21")
+        FlickerTrace.startWindowCapture(
+            androidx.compose.ui.platform.LocalContext.current.getActivity(), 90
+        )
+        true
     }
     val lazyListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -279,25 +283,24 @@ private fun SearchProviderCard(
     canDelete: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    // RikkaRP 临时诊断：记录卡片每帧 draw 与布局，以及当帧解析出的颜色
-    val diagContentColor = LocalContentColor.current
-    val diagSurfaceBright = MaterialTheme.colorScheme.surfaceBright
-    val diagSurfaceContainer = MaterialTheme.colorScheme.surfaceContainer
-    Card(
-        onClick = onEdit,
+    // ── RikkaRP 诊断 rp.21（实验组）─────────────────────────────────────
+    // 把 Card(onClick) 换成「纯 Box + background + clickable」。
+    // 目的：Card 内部走 Surface → Modifier.shadow + border + background + clip，
+    //       其中 shadow 与 clip 都会产生 graphicsLayer（硬件加速下是独立 RenderNode）。
+    //       如果去掉 Surface 后不再闪，根因就锁定在 RenderNode 首帧未就绪。
+    // 对照组：赞助页保持原样（仍用 CardGroup → Surface）。
+    val cardColors = CustomColors.listItemColors
+    val cardBg = cardColors.containerColor
+    Box(
         modifier = modifier
             .flickerTraceLayout("searchCard")
-            .flickerTraceDraw("searchCard") {
-                "bright=#%08X content=#%08X container=#%08X".format(
-                    diagSurfaceBright.toArgb(),
-                    diagContentColor.toArgb(),
-                    diagSurfaceContainer.toArgb(),
-                )
-            },
-        colors = CardDefaults.cardColors(
-            containerColor = CustomColors.listItemColors.containerColor
-        )
+            .flickerTraceDraw("searchCard") { "bg=#%08X".format(cardBg.toArgb()) }
+            .background(cardBg)
+            .clickable(onClick = onEdit),
     ) {
+        androidx.compose.runtime.CompositionLocalProvider(
+            LocalContentColor provides cardColors.contentColor
+        ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -316,7 +319,8 @@ private fun SearchProviderCard(
             ) {
                 Text(
                     text = service.displayName,
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.flickerTraceDraw("headlineText"),
                 )
                 SearchAbilityTagLine(options = service)
             }
@@ -332,6 +336,7 @@ private fun SearchProviderCard(
                     ),
                 )
             )
+        }
         }
     }
 }
