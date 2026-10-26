@@ -339,8 +339,8 @@ class RouteActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         // 同一帧内连续两次返回时 NavDisplay 的返回状态还没更新，会多回调一次，不加判断会把栈弹空
                         onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
-                        // RikkaRP: 全部显式指定 tween —— 原来 slideInHorizontally { it }
-                        // 没传 animationSpec，用的是默认 spring，时长与弹窗的 400ms 对不上。
+                        // RikkaRP: 全部显式指定 tween —— 不传 animationSpec 会用默认 spring，
+                        // 时长无法与全局 300ms 对齐。
                         // ────────────────────────────────────────────────────────────
                         // 页面转场：照搬 Litchi(Cyrene) MainScreen.kt 的 sharedAxisX
                         //
@@ -350,47 +350,33 @@ class RouteActivity : ComponentActivity() {
                         // Litchi 的解法：旧页用 ExitTransition.None **完全静止**，
                         // 只有新页从屏幕右缘之外整屏滑入并淡入。因为 target 绘制在上层，
                         // 静止的旧页被新页逐渐盖住，观感是干脆的整页推进，全程无重影。
+                        //
+                        // 返回时父页不能完全静止：Nav3 的 NavDisplay 不暴露 zIndex，
+                        // 父页若静止且不透明会把正在滑出的子页整块盖住，
+                        // 所以父页改为从左侧轻微滑回（-it/4，不带淡入）。
                         // ────────────────────────────────────────────────────────────
-                        // ★★ RikkaRP 诊断版（rp.16-diag）：转场暂时改为「瞬时切换」★★
-                        //
-                        // 目的：一次性判断「进入子页后顶部内容闪一下」到底来自哪里。
-                        //   · 关掉转场后**不再闪** -> 问题在转场（layer 平移 + 首帧合成）
-                        //   · 关掉转场后**照旧闪** -> 问题在页面自身的首帧测量
-                        //
-                        // 这只是诊断，不是最终形态。原来的滑动实现留在下方注释里，
-                        // 定因后按需恢复（并把 PageMs 用回去）。
                         transitionSpec = {
-                            EnterTransition.None togetherWith ExitTransition.None
+                            val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            if (backStack.size == 1) {
+                                fadeIn(fade) togetherWith fadeOut(fade)
+                            } else {
+                                (slideInHorizontally(slide) { it } + fadeIn(fade)) togetherWith
+                                    ExitTransition.None
+                            }
                         },
                         popTransitionSpec = {
-                            EnterTransition.None togetherWith ExitTransition.None
+                            val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            (slideInHorizontally(slide) { -it / 4 }) togetherWith
+                                (slideOutHorizontally(slide) { it } + fadeOut(fade))
                         },
                         predictivePopTransitionSpec = {
-                            EnterTransition.None togetherWith ExitTransition.None
+                            val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            (slideInHorizontally(slide) { -it / 4 }) togetherWith
+                                (slideOutHorizontally(slide) { it } + fadeOut(fade))
                         },
-                        // ---- 诊断前的写法（保留备查）----
-                        // transitionSpec = {
-                        //     val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                        //     val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                        //     if (backStack.size == 1) {
-                        //         fadeIn(fade) togetherWith fadeOut(fade)
-                        //     } else {
-                        //         (slideInHorizontally(slide) { it } + fadeIn(fade)) togetherWith
-                        //             ExitTransition.None
-                        //     }
-                        // },
-                        // popTransitionSpec = {
-                        //     val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                        //     val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                        //     (slideInHorizontally(slide) { -it / 4 }) togetherWith
-                        //         (slideOutHorizontally(slide) { it } + fadeOut(fade))
-                        // },
-                        // predictivePopTransitionSpec = {
-                        //     val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                        //     val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                        //     (slideInHorizontally(slide) { -it / 4 }) togetherWith
-                        //         (slideOutHorizontally(slide) { it } + fadeOut(fade))
-                        // },
                         entryProvider = entryProvider {
                             // RikkaRP: 上游原版把对话页设为淡入淡出（当时对话页是唯一的首屏，
                             // 淡入无感）。改成多页后，从消息页进入对话页会变成「渐变」，

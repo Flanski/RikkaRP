@@ -62,8 +62,6 @@ const val MEMORY_DREAM_NOTIFICATION_CHANNEL_ID = "memory_dream"
 class RikkaHubApp : Application() {
     override fun onCreate() {
         super.onCreate()
-        // RikkaRP 临时诊断：初始化闪烁探针（见 ui/diag/FlickerTrace.kt，定位完成后可整份删除）
-        me.rerere.rikkahub.ui.diag.FlickerTrace.init(this)
         // Restore files and settings before eager Koin singletons or workers can access them.
         try {
             val restored = runBlocking(Dispatchers.IO) {

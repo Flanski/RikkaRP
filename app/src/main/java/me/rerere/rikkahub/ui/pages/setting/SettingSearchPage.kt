@@ -6,7 +6,6 @@ import me.rerere.hugeicons.stroke.Delete01
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -25,7 +24,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -57,9 +55,6 @@ import me.rerere.rikkahub.ui.components.ui.Tag
 import me.rerere.rikkahub.ui.components.ui.TagType
 import me.rerere.rikkahub.ui.components.ui.longPressReorder
 import me.rerere.rikkahub.ui.context.LocalNavController
-import me.rerere.rikkahub.ui.diag.FlickerTrace
-import me.rerere.rikkahub.ui.diag.flickerTraceDraw
-import me.rerere.rikkahub.ui.diag.flickerTraceLayout
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.plus
@@ -72,23 +67,10 @@ import me.rerere.ui.components.RikkaConfirmDialog
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
-import me.rerere.rikkahub.utils.getActivity
-import androidx.compose.foundation.clickable
 
 @Composable
 fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
     val settings by vm.settings.collectAsStateWithLifecycle()
-    // RikkaRP 诊断 rp.21：必须用 remember 在「首次组合时」就开始记录。
-    //   之前用 LaunchedEffect，它要等组合+布局完成才跑，首帧的 draw 早就过去了 ——
-    //   这正是前几轮日志里 searchCard 只有 1 次 DRAW 的原因（首帧根本没被记录到）。
-    // ★ LocalContext.current 是 @Composable，只能在这里取；
-    //   remember { } 的 calculation lambda 不是 composable 上下文（踩过第三次了）。
-    val diagActivity = androidx.compose.ui.platform.LocalContext.current.getActivity()
-    remember(diagActivity) {
-        FlickerTrace.arm("SettingSearchPage_rp21")
-        FlickerTrace.startWindowCapture(diagActivity, 90)
-        true
-    }
     val lazyListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val nav = LocalNavController.current
@@ -285,24 +267,13 @@ private fun SearchProviderCard(
     canDelete: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    // ── RikkaRP 诊断 rp.21（实验组）─────────────────────────────────────
-    // 把 Card(onClick) 换成「纯 Box + background + clickable」。
-    // 目的：Card 内部走 Surface → Modifier.shadow + border + background + clip，
-    //       其中 shadow 与 clip 都会产生 graphicsLayer（硬件加速下是独立 RenderNode）。
-    //       如果去掉 Surface 后不再闪，根因就锁定在 RenderNode 首帧未就绪。
-    // 对照组：赞助页保持原样（仍用 CardGroup → Surface）。
-    val cardColors = CustomColors.listItemColors
-    val cardBg = cardColors.containerColor
-    Box(
-        modifier = modifier
-            .flickerTraceLayout("searchCard")
-            .flickerTraceDraw("searchCard") { "bg=#%08X".format(cardBg.toArgb()) }
-            .background(cardBg)
-            .clickable(onClick = onEdit),
+    Card(
+        onClick = onEdit,
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = CustomColors.listItemColors.containerColor
+        )
     ) {
-        androidx.compose.runtime.CompositionLocalProvider(
-            LocalContentColor provides cardColors.contentColor
-        ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -322,7 +293,6 @@ private fun SearchProviderCard(
                 Text(
                     text = service.displayName,
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.flickerTraceDraw("headlineText"),
                 )
                 SearchAbilityTagLine(options = service)
             }
@@ -338,7 +308,6 @@ private fun SearchProviderCard(
                     ),
                 )
             )
-        }
         }
     }
 }

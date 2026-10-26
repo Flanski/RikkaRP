@@ -33,7 +33,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
-import me.rerere.rikkahub.ui.diag.FlickerTrace
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.remote.SponsorAPI
 import me.rerere.rikkahub.data.model.Sponsor
@@ -46,22 +45,9 @@ import me.rerere.rikkahub.utils.onLoading
 import me.rerere.rikkahub.utils.onSuccess
 import me.rerere.rikkahub.utils.openUrl
 import org.koin.compose.koinInject
-import me.rerere.rikkahub.utils.getActivity
-import me.rerere.rikkahub.ui.diag.flickerTraceDraw
-import androidx.compose.runtime.remember
 
 @Composable
 fun SettingDonatePage() {
-    // RikkaRP 诊断 rp.21（对照组）：保持 CardGroup → Surface 原样，只把记录时机提前到首次组合。
-    // ★ LocalContext.current 是 @Composable，只能在这里取；
-    //   remember { } 的 calculation lambda 不是 composable 上下文（踩过第三次了）。
-    val diagActivity = androidx.compose.ui.platform.LocalContext.current.getActivity()
-    remember(diagActivity) {
-        FlickerTrace.arm("SettingDonatePage_rp21")
-        FlickerTrace.startWindowCapture(diagActivity, 90)
-        true
-    }
-
     Scaffold(
         topBar = {
                         SharpTopBar(
@@ -99,13 +85,8 @@ fun SettingDonatePage() {
 private fun DonateMethodsCardGroup() {
     val context = LocalContext.current
     CardGroup(
-        modifier = Modifier.fillMaxWidth().flickerTraceDraw("donateCardGroup"),
-        title = {
-            Text(
-                text = stringResource(R.string.donate_page_donation_methods),
-                modifier = Modifier.flickerTraceDraw("donateTitle"),
-            )
-        },
+        modifier = Modifier.fillMaxWidth(),
+        title = { Text(stringResource(R.string.donate_page_donation_methods)) },
     ) {
         item(
             onClick = { context.openUrl("https://ko-fi.com/reovodev") },
