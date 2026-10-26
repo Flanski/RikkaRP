@@ -143,11 +143,7 @@ fun SettingMcpPage(vm: SettingVM = koinViewModel()) {
                                 )
                             }
                         },
-                        modifier = Modifier.animateItem(
-                            fadeInSpec = null,
-                            placementSpec = SharpMotion.spec(),
-                            fadeOutSpec = SharpMotion.spec(),
-                        )
+                        modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec())
                     )
                 }
             }

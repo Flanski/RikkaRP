@@ -113,11 +113,7 @@ fun FavoritePage(vm: FavoriteVM = koinViewModel()) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp)
-                        .animateItem(
-                            fadeInSpec = null,
-                            placementSpec = SharpMotion.spec(),
-                            fadeOutSpec = SharpMotion.spec(),
-                        ),
+                        .animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
                 )
             }
         }

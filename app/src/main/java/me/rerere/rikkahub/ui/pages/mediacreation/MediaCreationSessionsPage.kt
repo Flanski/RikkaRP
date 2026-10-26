@@ -122,11 +122,7 @@ fun MediaCreationSessionsPage(vm: MediaCreationSessionsVM = koinViewModel()) {
                     onOpen = { open(session.id) },
                     onRename = { renaming = session },
                     onDelete = { deleting = session },
-                    modifier = Modifier.animateItem(
-                            fadeInSpec = null,
-                            placementSpec = SharpMotion.spec(),
-                            fadeOutSpec = SharpMotion.spec(),
-                        ),
+                    modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
                 )
             }
         }

@@ -245,11 +245,7 @@ private fun AssistantPickerSheet(
                                 onAssistantSelected(assistant.id)
                             }
                         },
-                        modifier = Modifier.animateItem(
-                            fadeInSpec = null,
-                            placementSpec = SharpMotion.spec(),
-                            fadeOutSpec = SharpMotion.spec(),
-                        ),
+                        modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
                         shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(
                             containerColor = if (checked) MaterialTheme.colorScheme.primaryContainer

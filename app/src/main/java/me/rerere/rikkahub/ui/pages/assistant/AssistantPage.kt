@@ -229,11 +229,7 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .animateItem(
-                            fadeInSpec = null,
-                            placementSpec = SharpMotion.spec(),
-                            fadeOutSpec = SharpMotion.spec(),
-                        )
+                                .animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec())
                                 .then(longPressReorder(isDragging, enabled = !isFiltering))
                         )
                     }

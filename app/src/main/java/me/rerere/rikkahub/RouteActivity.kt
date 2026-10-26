@@ -338,43 +338,45 @@ class RouteActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         // 同一帧内连续两次返回时 NavDisplay 的返回状态还没更新，会多回调一次，不加判断会把栈弹空
                         onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
+                        // RikkaRP: 全部显式指定 tween —— 原来 slideInHorizontally { it }
+                        // 没传 animationSpec，用的是默认 spring，时长与弹窗的 400ms 对不上。
                         // ────────────────────────────────────────────────────────────
                         // 页面转场：照搬 Litchi(Cyrene) MainScreen.kt 的 sharedAxisX
                         //
-                        // ★ 全程不使用任何 alpha 动画（既不 fadeIn 也不 fadeOut）。
+                        // 原写法把旧页也做了 scaleOut(0.7f) + fadeOut()，两页同时半透明，
+                        // 背景透出来 —— 视觉上就是「渐变」，不是滑动。这正是被反复指出的问题。
                         //
-                        // 之前的写法是「新页滑入 + fadeIn」，返回时「子页滑出 + fadeOut」。
-                        // 淡入淡出会让新页内容从 alpha=0 渐变到 1：用户看到的是
-                        // 「内容先变淡（像消失）再变实（重新出现）」，也就是被反复投诉的
-                        // 「约 100ms 一闪」。顶栏是纯色浅底，淡入几乎看不出；而白色卡片、
-                        // 蓝色选项卡、彩色图标反差大，所以只有内容区显得在闪。
-                        //
-                        // 现在：旧页 ExitTransition.None 完全静止，新页整屏滑入且**始终不透明**，
-                        // 新页绘制在上层，直接盖住静止的旧页 —— 观感是干脆的整页推进。
-                        // 返回同理：父页从左侧轻微滑回（-it/4，无淡入），子页向右整屏滑出（无淡出）。
-                        // 父页之所以不能完全静止：Nav3 的 NavDisplay 不暴露 zIndex，
-                        // 父页若静止且不透明会把正在滑出的子页整块盖住。
+                        // Litchi 的解法：旧页用 ExitTransition.None **完全静止**，
+                        // 只有新页从屏幕右缘之外整屏滑入并淡入。因为 target 绘制在上层，
+                        // 静止的旧页被新页逐渐盖住，观感是干脆的整页推进，全程无重影。
                         // ────────────────────────────────────────────────────────────
                         transitionSpec = {
                             val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
                             if (backStack.size == 1) {
-                                // 冷启动进首页：没有「上一页」可静止，只能从透明淡入。
-                                // 这不是页面切换，不会产生「上一页内容变淡」的现象。
-                                fadeIn(tween(SharpMotion.PageMs, easing = FastOutSlowInEasing)) togetherWith
-                                    ExitTransition.None
+                                fadeIn(fade) togetherWith fadeOut(fade)
                             } else {
-                                slideInHorizontally(slide) { it } togetherWith ExitTransition.None
+                                (slideInHorizontally(slide) { it } + fadeIn(fade)) togetherWith
+                                    ExitTransition.None
                             }
                         },
                         popTransitionSpec = {
                             val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            // 返回：子页向右整屏滑出并淡出。
+                            // Litchi 这里用 EnterTransition.None（父页静止），并靠 zIndex 让子页
+                            // 始终处于上层；而 Nav3 的 NavDisplay 不暴露 zIndex，
+                            // 父页一旦完全静止且不透明就会把子页整个盖住、看不到滑出过程。
+                            // 因此父页改为从左侧轻微滑回（-it/4，**不带任何淡入**）：
+                            // 仍然全程不透明、无渐变感，同时保证子页滑出可见。
                             (slideInHorizontally(slide) { -it / 4 }) togetherWith
-                                slideOutHorizontally(slide) { it }
+                                (slideOutHorizontally(slide) { it } + fadeOut(fade))
                         },
                         predictivePopTransitionSpec = {
                             val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
+                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
                             (slideInHorizontally(slide) { -it / 4 }) togetherWith
-                                slideOutHorizontally(slide) { it }
+                                (slideOutHorizontally(slide) { it } + fadeOut(fade))
                         },
                         entryProvider = entryProvider {
                             // RikkaRP: 上游原版把对话页设为淡入淡出（当时对话页是唯一的首屏，

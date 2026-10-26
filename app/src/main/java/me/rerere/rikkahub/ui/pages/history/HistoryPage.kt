@@ -124,11 +124,7 @@ fun HistoryPage(vm: HistoryVM = koinViewModel()) {
                     onTogglePin = { vm.togglePinStatus(conversation.id) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .animateItem(
-                            fadeInSpec = null,
-                            placementSpec = SharpMotion.spec(),
-                            fadeOutSpec = SharpMotion.spec(),
-                        )
+                        .animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec())
                 )
             }
         }
