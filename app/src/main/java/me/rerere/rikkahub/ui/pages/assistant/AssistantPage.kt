@@ -204,6 +204,13 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
                     ReorderableItem(
                         state = reorderableState,
                         key = assistant.id,
+                        // ★ 必须显式传：默认值 Modifier.animateItem() 的 fadeInSpec 非 null，
+                        //   会让 item 首帧 alpha=0 再淡入 —— 进入页面时表现为"闪一下"。
+                        animateItemModifier = Modifier.animateItem(
+                            fadeInSpec = null,
+                            placementSpec = SharpMotion.spec(),
+                            fadeOutSpec = SharpMotion.spec(),
+                        ),
                     ) { isDragging ->
                         val memories by vm.getMemories(assistant).collectAsStateWithLifecycle(
                             initialValue = emptyList(),
@@ -227,9 +234,9 @@ fun AssistantPage(vm: AssistantVM = koinViewModel()) {
                             onDelete = {
                                 deleteTarget = assistant
                             },
+                            // 不再在这里写 animateItem：ReorderableItem 的 animateItemModifier 已负责
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec())
                                 .then(longPressReorder(isDragging, enabled = !isFiltering))
                         )
                     }
@@ -305,7 +312,14 @@ private fun AssistantTagsFilterRow(
         ) {
             items(items = settings.assistantTags, key = { tag -> tag.id }) { tag ->
                 ReorderableItem(
-                    state = tagsReorderableState, key = tag.id
+                    state = tagsReorderableState, key = tag.id,
+                    // ★ 必须显式传：默认值 Modifier.animateItem() 的 fadeInSpec 非 null，
+                    //   会让 item 首帧 alpha=0 再淡入 —— 进入页面时表现为"闪一下"。
+                    animateItemModifier = Modifier.animateItem(
+                        fadeInSpec = null,
+                        placementSpec = SharpMotion.spec(),
+                        fadeOutSpec = SharpMotion.spec(),
+                    ),
                 ) { isDragging ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

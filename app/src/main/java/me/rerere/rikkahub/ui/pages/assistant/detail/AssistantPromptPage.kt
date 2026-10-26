@@ -103,6 +103,7 @@ import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import sh.calvin.reorderable.ReorderableColumn
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 
 @Composable
 fun AssistantPromptPage(id: String) {
@@ -475,7 +476,14 @@ private fun AssistantPromptContent(
         ) { index, regex, isDragging ->
             key(regex.id) {
                 ReorderableItem(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    // ★ 必须显式传：默认值 Modifier.animateItem() 的 fadeInSpec 非 null，
+                    //   会让 item 首帧 alpha=0 再淡入 —— 进入页面时表现为"闪一下"。
+                    animateItemModifier = Modifier.animateItem(
+                        fadeInSpec = null,
+                        placementSpec = SharpMotion.spec(),
+                        fadeOutSpec = SharpMotion.spec(),
+                    ),
                 ) {
                     val expanded = regex.id in expandedIds
                     AssistantRegexCard(

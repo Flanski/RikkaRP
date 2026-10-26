@@ -83,6 +83,7 @@ import me.rerere.ui.components.RikkaConfirmDialog
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 
 private enum class SpeechTab(
     override val icon: ImageVector,
@@ -228,7 +229,14 @@ private fun TTSProviderList(
         items(settings.ttsProviders, key = { it.id }) { provider ->
             ReorderableItem(
                 state = reorderableState,
-                key = provider.id
+                key = provider.id,
+                // ★ 必须显式传：默认值 Modifier.animateItem() 的 fadeInSpec 非 null，
+                //   会让 item 首帧 alpha=0 再淡入 —— 进入页面时表现为"闪一下"。
+                animateItemModifier = Modifier.animateItem(
+                    fadeInSpec = null,
+                    placementSpec = SharpMotion.spec(),
+                    fadeOutSpec = SharpMotion.spec(),
+                ),
             ) { isDragging ->
                 val isSelected = settings.selectedTTSProviderId == provider.id
                 SpeechProviderItem(
@@ -306,7 +314,14 @@ private fun ASRProviderList(
         items(settings.asrProviders, key = { it.id }) { provider ->
             ReorderableItem(
                 state = reorderableState,
-                key = provider.id
+                key = provider.id,
+                // ★ 必须显式传：默认值 Modifier.animateItem() 的 fadeInSpec 非 null，
+                //   会让 item 首帧 alpha=0 再淡入 —— 进入页面时表现为"闪一下"。
+                animateItemModifier = Modifier.animateItem(
+                    fadeInSpec = null,
+                    placementSpec = SharpMotion.spec(),
+                    fadeOutSpec = SharpMotion.spec(),
+                ),
             ) { isDragging ->
                 SpeechProviderItem(
                     modifier = Modifier

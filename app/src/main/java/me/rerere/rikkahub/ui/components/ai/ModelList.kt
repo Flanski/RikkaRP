@@ -568,14 +568,21 @@ private fun ColumnScope.ModelList(
             ) { (model, provider) ->
                 ReorderableItem(
                     state = reorderableState,
-                    key = "favorite:" + model.id.toString()
+                    key = "favorite:" + model.id.toString(),
+                    // ★ 必须显式传：默认值 Modifier.animateItem() 的 fadeInSpec 非 null，
+                    //   会让 item 首帧 alpha=0 再淡入 —— 进入页面时表现为"闪一下"。
+                    animateItemModifier = Modifier.animateItem(
+                        fadeInSpec = null,
+                        placementSpec = SharpMotion.spec(),
+                        fadeOutSpec = SharpMotion.spec(),
+                    ),
                 ) { isDragging ->
                     ModelItem(
                         model = model,
                         onSelect = onSelect,
-                        modifier = Modifier
-                            .scale(if (isDragging) 0.95f else 1f)
-                            .animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
+                        // 不再在这里写 animateItem：ReorderableItem 的 animateItemModifier 已负责，
+                        // 两处都写会让 item 被两层动画驱动。
+                        modifier = Modifier.scale(if (isDragging) 0.95f else 1f),
                         providerSetting = provider,
                         select = model.id == currentModel,
                         onDismiss = {
@@ -671,7 +678,11 @@ private fun ColumnScope.ModelList(
                 ModelItem(
                     model = model,
                     onSelect = onSelect,
-                    modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
+                    modifier = Modifier.animateItem(
+                            fadeInSpec = null,
+                            placementSpec = SharpMotion.spec(),
+                            fadeOutSpec = SharpMotion.spec(),
+                        ),
                     providerSetting = providerSetting,
                     select = currentModel == model.id,
                     onDismiss = {

@@ -167,13 +167,21 @@ fun ColumnScope.ConversationList(
                 is ConversationListItem.DateHeader -> {
                     DateHeaderItem(
                         label = item.label,
-                        modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec())
+                        modifier = Modifier.animateItem(
+                            fadeInSpec = null,
+                            placementSpec = SharpMotion.spec(),
+                            fadeOutSpec = SharpMotion.spec(),
+                        )
                     )
                 }
 
                 is ConversationListItem.PinnedHeader -> {
                     PinnedHeader(
-                        modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec())
+                        modifier = Modifier.animateItem(
+                            fadeInSpec = null,
+                            placementSpec = SharpMotion.spec(),
+                            fadeOutSpec = SharpMotion.spec(),
+                        )
                     )
                 }
 
@@ -181,7 +189,11 @@ fun ColumnScope.ConversationList(
                     val conv = item.conversation
                     // RikkaRP: 左滑露出「置顶 / 更多 / 删除」，逻辑全部复用原有的回调
                     SwipeableRow(
-                        modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
+                        modifier = Modifier.animateItem(
+                            fadeInSpec = null,
+                            placementSpec = SharpMotion.spec(),
+                            fadeOutSpec = SharpMotion.spec(),
+                        ),
                         isOpen = swipeOpenFor == conv.id,
                         onOpenChange = { open ->
                             swipeOpenFor = if (open) conv.id else {

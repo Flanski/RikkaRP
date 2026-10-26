@@ -112,10 +112,6 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
             }
         }
 
-        // RikkaRP 诊断：分层判定。青色 = LazyColumn 这一层
-        androidx.compose.foundation.layout.Box(
-            Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF00FFFF))
-        ) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -127,12 +123,17 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
             items(settings.searchServices, key = { it.id }) { service ->
                 ReorderableItem(
                     state = reorderableState,
-                    key = service.id
+                    key = service.id,
+                    // ★ 必须在这里指定，不能在 content 里的 Card 上再写一次 animateItem。
+                    //   ReorderableItem 的 animateItemModifier 默认值是 Modifier.animateItem()
+                    //   （fadeInSpec 非 null），若外面又加一层，item 会同时被两层淡入驱动，
+                    //   首帧 alpha≈0 → 卡片白底与标题不可见 → 下一帧才淡入，表现为"闪一下"。
+                    animateItemModifier = Modifier.animateItem(
+                        fadeInSpec = null,
+                        placementSpec = SharpMotion.spec(),
+                        fadeOutSpec = SharpMotion.spec(),
+                    ),
                 ) { isDragging ->
-                    // RikkaRP 诊断：分层判定。洋红 = 卡片这一层；若异常帧是青色说明卡片没画
-                    androidx.compose.foundation.layout.Box(
-                        Modifier.fillMaxWidth().background(androidx.compose.ui.graphics.Color(0xFFFF00FF))
-                    ) {
                     SearchProviderCard(
                         service = service,
                         onEdit = {
@@ -142,11 +143,8 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
                             deleteTarget = service
                         },
                         canDelete = settings.searchServices.size > 1,
-                        modifier = Modifier
-                            .animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec())
-                            .then(longPressReorder(isDragging))
+                        modifier = Modifier.then(longPressReorder(isDragging)),
                     )
-                    }
                 }
             }
 
@@ -161,7 +159,6 @@ fun SettingSearchPage(vm: SettingVM = koinViewModel()) {
                 )
             }
         }
-        }   // 诊断 Box 结束
     }
 
     if (showAddDialog) {

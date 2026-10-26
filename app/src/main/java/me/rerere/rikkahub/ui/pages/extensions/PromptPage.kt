@@ -116,6 +116,7 @@ import me.rerere.ui.components.Select
 import org.koin.androidx.compose.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 
 private enum class PromptTab(
     override val icon: ImageVector,
@@ -237,7 +238,14 @@ private fun ModeInjectionTab(
                 items(modeInjections, key = { it.id }) { injection ->
                     ReorderableItem(
                         state = reorderableState,
-                        key = injection.id
+                        key = injection.id,
+                        // ★ 必须显式传：默认值 Modifier.animateItem() 的 fadeInSpec 非 null，
+                        //   会让 item 首帧 alpha=0 再淡入 —— 进入页面时表现为"闪一下"。
+                        animateItemModifier = Modifier.animateItem(
+                            fadeInSpec = null,
+                            placementSpec = SharpMotion.spec(),
+                            fadeOutSpec = SharpMotion.spec(),
+                        ),
                     ) { isDragging ->
                         ModeInjectionCard(
                             injection = injection,
@@ -642,7 +650,14 @@ private fun LorebookTab(
                 items(lorebooks, key = { it.id }) { book ->
                     ReorderableItem(
                         state = reorderableState,
-                        key = book.id
+                        key = book.id,
+                        // ★ 必须显式传：默认值 Modifier.animateItem() 的 fadeInSpec 非 null，
+                        //   会让 item 首帧 alpha=0 再淡入 —— 进入页面时表现为"闪一下"。
+                        animateItemModifier = Modifier.animateItem(
+                            fadeInSpec = null,
+                            placementSpec = SharpMotion.spec(),
+                            fadeOutSpec = SharpMotion.spec(),
+                        ),
                     ) { isDragging ->
                         LorebookCard(
                             book = book,

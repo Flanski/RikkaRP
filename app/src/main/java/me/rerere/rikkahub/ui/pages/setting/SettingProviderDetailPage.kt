@@ -150,6 +150,7 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 
 private enum class ProviderDetailTab(
     override val icon: ImageVector,
@@ -483,7 +484,14 @@ private fun ModelList(
                 items(providerSetting.models, key = { it.id }) { item ->
                     ReorderableItem(
                         state = reorderableLazyListState,
-                        key = item.id
+                        key = item.id,
+                        // ★ 必须显式传：默认值 Modifier.animateItem() 的 fadeInSpec 非 null，
+                        //   会让 item 首帧 alpha=0 再淡入 —— 进入页面时表现为"闪一下"。
+                        animateItemModifier = Modifier.animateItem(
+                            fadeInSpec = null,
+                            placementSpec = SharpMotion.spec(),
+                            fadeOutSpec = SharpMotion.spec(),
+                        ),
                     ) { isDragging ->
                         ModelCard(
                             model = item,

@@ -156,7 +156,11 @@ fun TranslatorPage(vm: TranslatorVM = koinViewModel()) {
             ) {
                 if (modelMissing) {
                     item(key = "model_missing") {
-                        ModelMissingTip(modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()))
+                        ModelMissingTip(modifier = Modifier.animateItem(
+                            fadeInSpec = null,
+                            placementSpec = SharpMotion.spec(),
+                            fadeOutSpec = SharpMotion.spec(),
+                        ))
                     }
                 }
 
@@ -198,7 +202,11 @@ fun TranslatorPage(vm: TranslatorVM = koinViewModel()) {
                     item(key = "history_header") {
                         TranslationHistoryHeader(
                             onClear = vm::clearHistory,
-                            modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
+                            modifier = Modifier.animateItem(
+                            fadeInSpec = null,
+                            placementSpec = SharpMotion.spec(),
+                            fadeOutSpec = SharpMotion.spec(),
+                        ),
                         )
                     }
                 }
@@ -215,7 +223,11 @@ fun TranslatorPage(vm: TranslatorVM = koinViewModel()) {
                             scope.launch { listState.animateScrollToItem(0) }
                         },
                         onDelete = { vm.deleteHistory(entry) },
-                        modifier = Modifier.animateItem(SharpMotion.spec(), SharpMotion.spec(), SharpMotion.spec()),
+                        modifier = Modifier.animateItem(
+                            fadeInSpec = null,
+                            placementSpec = SharpMotion.spec(),
+                            fadeOutSpec = SharpMotion.spec(),
+                        ),
                     )
                 }
             }
