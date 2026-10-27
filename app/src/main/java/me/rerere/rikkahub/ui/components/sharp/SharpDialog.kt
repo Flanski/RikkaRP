@@ -7,6 +7,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -414,6 +416,15 @@ fun SharpDialogHost(
 /** 弹窗动画阶段。用于让动画**顺序**播放，不被新信号打断。 */
 private enum class Phase { IDLE, OPENING, OPEN, CLOSING }
 
+/**
+ * 弹窗内子页切换是否套用「页面切换动画」（与 RouteActivity 的原版转场同一套）。
+ *
+ * ★ 可退回途径：改成 false 即恢复弹窗自己原来的「左滑出/右滑入 + fade」，
+ *   旧实现以注释形式完整保留在下方 transitionSpec 里，无需再改结构。
+ *   这是一个实验性开关，用户要对比两种手感。
+ */
+private const val UsePageTransitionInDialog = true
+
 @Composable
 private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
     var spec by remember { mutableStateOf<SharpDialogSpec?>(null) }
@@ -458,32 +469,22 @@ private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
             phase = Phase.OPENING
             // 从当前值continue，不强制归零 —— 这样中途反向也能接上，不会跳一下
             if (scale.value <= 0.001f) scale.snapTo(0f)
-            // 1) 按 Demo 曲线展开到过冲峰值
-            scale.animateTo(
-                SharpMotion.DialogPeak,
-                tween(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing),
-            )
-            // 2) 到达后震荡几下
+            // 展开：scaleY 0 -> 1 单段，250ms cubic-bezier(0.4,0,0.2,1)。
+            // ★ 不再先放到 1.06 再弹簧回弹 —— 那一下过冲+震荡就是用户说的「抖动」。
+            //   现在与工作区「通知弹窗特效Demo.html」的 modalExpand 关键帧完全一致：
+            //   0% scaleY(0)/opacity 0  ->  100% scaleY(1)/opacity 1，无中间峰。
             scale.animateTo(
                 1f,
-                spring(
-                    SharpMotion.DampingRatio,
-                    SharpMotion.Stiffness,
-                    visibilityThreshold = SharpMotion.VisibilityThreshold,
-                ),
+                tween(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing),
             )
             phase = Phase.OPEN
         } else {
             if (phase == Phase.IDLE) return@LaunchedEffect
             phase = Phase.CLOSING
             closing = true
-            // 已完全展开时先反向放大一点再收（与 Demo 一致）
-            if (scale.value >= 1f) {
-                scale.animateTo(
-                    SharpMotion.DialogPeak,
-                    tween(SharpMotion.PressMs, easing = SharpMotion.easing),
-                )
-            }
+            // 收起：scaleY 1 -> 0 单段，与 Demo 的 modalCollapse 一致。
+            // ★ 原实现在收起前先放大一点点（模拟"被压一下再收"），Demo 里没有这一下，
+            //   同样属于抖动，一并去掉。
             scale.animateTo(
                 0f,
                 tween(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing),
@@ -621,19 +622,36 @@ private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
                 AnimatedContent(
                     targetState = current,
                     transitionSpec = {
-                        val slide = tween<IntOffset>(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing)
-                        val fade = tween<Float>(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing)
-                        when (pageNav) {
-                            SheetNav.FORWARD ->
-                                (slideInHorizontally(slide) { it } + fadeIn(fade)) togetherWith
-                                    (slideOutHorizontally(slide) { -it } + fadeOut(fade))
+                        if (UsePageTransitionInDialog) {
+                            // 与页面转场完全相同的动画：新页整屏滑入，旧页滑出 1/2 + 缩到 0.7 + 淡出。
+                            // 弹窗自身的 scaleY 展开与半透明遮罩不受影响（两者是不同层级）。
+                            when (pageNav) {
+                                SheetNav.FORWARD ->
+                                    slideInHorizontally { it } togetherWith
+                                        (slideOutHorizontally { -it / 2 } + scaleOut(targetScale = 0.7f) + fadeOut())
 
-                            SheetNav.BACK ->
-                                (slideInHorizontally(slide) { -it } + fadeIn(fade)) togetherWith
-                                    (slideOutHorizontally(slide) { it } + fadeOut(fade))
+                                SheetNav.BACK ->
+                                    (slideInHorizontally { -it / 2 } + scaleIn(initialScale = 0.7f) + fadeIn()) togetherWith
+                                        slideOutHorizontally { it }
 
-                            // 首次打开只淡入 —— 展开动画由 scale 负责，这里再做位移会重复
-                            SheetNav.RESET -> fadeIn(fade) togetherWith fadeOut(fade)
+                                // 首次打开只淡入 —— 展开动画由 scale 负责，这里再做位移会重复
+                                SheetNav.RESET -> fadeIn() togetherWith fadeOut()
+                            }
+                        } else {
+                            // ── 可退回的旧实现（弹窗自己的滑动+fade，固定 300ms 缓动）──
+                            val slide = tween<IntOffset>(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing)
+                            val fade = tween<Float>(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing)
+                            when (pageNav) {
+                                SheetNav.FORWARD ->
+                                    (slideInHorizontally(slide) { it } + fadeIn(fade)) togetherWith
+                                        (slideOutHorizontally(slide) { -it } + fadeOut(fade))
+
+                                SheetNav.BACK ->
+                                    (slideInHorizontally(slide) { -it } + fadeIn(fade)) togetherWith
+                                        (slideOutHorizontally(slide) { it } + fadeOut(fade))
+
+                                SheetNav.RESET -> fadeIn(fade) togetherWith fadeOut(fade)
+                            }
                         }
                     },
                     label = "sharpSheetPage",

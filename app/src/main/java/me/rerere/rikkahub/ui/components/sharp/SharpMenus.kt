@@ -351,20 +351,13 @@ private fun SharpButtonMenuDial(
         mutableFloatStateOf(selectedIndex.coerceIn(0, (itemCount - 1).coerceAtLeast(0)).toFloat())
     }
 
-    // 展开：0 → 过冲 1.06 → 1
+    // 展开：0 -> 1 单段。与 SharpDialog 一致去掉「过冲 1.06 + 弹簧回弹」的抖动。
+    // （表盘是同一个 SharpUI 设计语言，抖动规则要统一，否则两处手感不一致。）
     val dial = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         dial.animateTo(
-            SharpMotion.DialogPeak,
-            tween(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing),
-        )
-        dial.animateTo(
             1f,
-            spring(
-                SharpMotion.DampingRatio,
-                SharpMotion.Stiffness,
-                visibilityThreshold = SharpMotion.VisibilityThreshold,
-            ),
+            tween(SharpMotion.DialogMs, easing = SharpMotion.dialogEasing),
         )
     }
 

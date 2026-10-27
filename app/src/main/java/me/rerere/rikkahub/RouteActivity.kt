@@ -339,43 +339,31 @@ class RouteActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         // 同一帧内连续两次返回时 NavDisplay 的返回状态还没更新，会多回调一次，不加判断会把栈弹空
                         onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
-                        // RikkaRP: 全部显式指定 tween —— 不传 animationSpec 会用默认 spring，
-                        // 时长无法与全局 300ms 对齐。
                         // ────────────────────────────────────────────────────────────
-                        // 页面转场：照搬 Litchi(Cyrene) MainScreen.kt 的 sharedAxisX
+                        // 页面转场：照搬 rikkahub 3.1.1（versionCode 194，tag ad2c443）原版实现
                         //
-                        // 原写法把旧页也做了 scaleOut(0.7f) + fadeOut()，两页同时半透明，
-                        // 背景透出来 —— 视觉上就是「渐变」，不是滑动。这正是被反复指出的问题。
+                        // 原版写法（app/.../RouteActivity.kt 第 338-352 行）：
+                        //   push: 新页从右整屏滑入，旧页向左滑出 1/2 + 缩小到 0.7 + 淡出
+                        //   pop : 父页从 -1/2 处滑回 + 从 0.7 放大回 1 + 淡入，子页向右滑出
                         //
-                        // Litchi 的解法：旧页用 ExitTransition.None **完全静止**，
-                        // 只有新页从屏幕右缘之外整屏滑入并淡入。因为 target 绘制在上层，
-                        // 静止的旧页被新页逐渐盖住，观感是干脆的整页推进，全程无重影。
-                        //
-                        // 返回时父页不能完全静止：Nav3 的 NavDisplay 不暴露 zIndex，
-                        // 父页若静止且不透明会把正在滑出的子页整块盖住，
-                        // 所以父页改为从左侧轻微滑回（-it/4，不带淡入）。
+                        // ★ 刻意不传 animationSpec —— 原版就是默认 spring。用户要求保持原版手感，
+                        //   所以这里不能套 tween(SharpMotion.PageMs)。
+                        //   （SharpMotion.PageMs 仍被极少数地方引用，保留常量不动。）
                         // ────────────────────────────────────────────────────────────
                         transitionSpec = {
-                            val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                            if (backStack.size == 1) {
-                                fadeIn(fade) togetherWith fadeOut(fade)
-                            } else {
-                                (slideInHorizontally(slide) { it } + fadeIn(fade)) togetherWith
-                                    ExitTransition.None
+                            if (backStack.size == 1) fadeIn() togetherWith fadeOut()
+                            else {
+                                slideInHorizontally { it } togetherWith
+                                    slideOutHorizontally { -it / 2 } + scaleOut(targetScale = 0.7f) + fadeOut()
                             }
                         },
                         popTransitionSpec = {
-                            val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                            (slideInHorizontally(slide) { -it / 4 }) togetherWith
-                                (slideOutHorizontally(slide) { it } + fadeOut(fade))
+                            slideInHorizontally { -it / 2 } + scaleIn(initialScale = 0.7f) + fadeIn() togetherWith
+                                slideOutHorizontally { it }
                         },
                         predictivePopTransitionSpec = {
-                            val slide = tween<IntOffset>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                            val fade = tween<Float>(SharpMotion.PageMs, easing = FastOutSlowInEasing)
-                            (slideInHorizontally(slide) { -it / 4 }) togetherWith
-                                (slideOutHorizontally(slide) { it } + fadeOut(fade))
+                            slideInHorizontally { -it / 2 } + scaleIn(initialScale = 0.7f) + fadeIn() togetherWith
+                                slideOutHorizontally { it }
                         },
                         entryProvider = entryProvider {
                             // RikkaRP: 上游原版把对话页设为淡入淡出（当时对话页是唯一的首屏，
