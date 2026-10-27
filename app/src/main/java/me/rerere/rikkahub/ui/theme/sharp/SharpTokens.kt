@@ -176,7 +176,14 @@ object SharpMotion {
      */
     fun <T> spec(): FiniteAnimationSpec<T> = tween(LinearMs, easing = dialogEasing)
 
-    /** 弹窗过冲峰值：先放大到该值再弹回 1.0 */
+    /**
+     * 弹窗过冲峰值（0 -> 1.06 -> 1 的那一下）。
+     *
+     * ★ rp.23 起**已不再使用**：用户要求去掉「弹窗展开后的抖动」，
+     *   SharpDialog 与 SharpMenus 的展开都改成了单段 0 -> 1（对齐
+     *   工作区 `通知弹窗特效Demo.html` 的 modalExpand 关键帧）。
+     *   常量保留只为「日后想恢复过冲手感」时能一眼找到原值，勿在新代码里引用。
+     */
     const val DialogPeak = 1.06f
 
     // —— 弹窗内越界拉动 ——
