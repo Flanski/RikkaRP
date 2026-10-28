@@ -55,7 +55,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -113,6 +112,8 @@ import androidx.compose.ui.res.stringResource
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.ai.ExtensionEmptyState
 import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
+import me.rerere.rikkahub.ui.components.sharp.SharpIconButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.CardGroupIcon
 import me.rerere.rikkahub.ui.components.ui.ConnectedChoiceButtons
@@ -199,34 +200,28 @@ fun WorkspaceDetailPage(id: String) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = state.workspace?.name ?: stringResource(R.string.workspace_detail_title),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                navigationIcon = { BackButton() },
+            // RikkaRP: 顶栏统一成设置页样式（SharpTopBar 自己处理单行省略）
+            SharpTopBar(
+                title = state.workspace?.name ?: stringResource(R.string.workspace_detail_title),
+                navigation = { BackButton() },
                 actions = {
                     if (onFilesTab) {
-                        IconButton(onClick = { filePicker.launch(arrayOf("*/*")) }) {
+                        SharpIconButton(onClick = { filePicker.launch(arrayOf("*/*")) }) {
                             Icon(
                                 HugeIcons.FileImport,
                                 contentDescription = stringResource(R.string.workspace_detail_import_file),
                             )
                         }
                     }
-                    IconButton(onClick = { vm.refresh() }) {
+                    SharpIconButton(onClick = { vm.refresh() }) {
                         Icon(HugeIcons.Refresh01, contentDescription = null)
                     }
                     if (state.workspace?.supportsTerminal() == true) {
-                        IconButton(onClick = { navController.navigate(Screen.WorkspaceTerminal(id)) }) {
+                        SharpIconButton(onClick = { navController.navigate(Screen.WorkspaceTerminal(id)) }) {
                             Icon(HugeIcons.ComputerTerminal01, contentDescription = null)
                         }
                     }
                 },
-                colors = CustomColors.topBarColors,
             )
         },
         containerColor = CustomColors.topBarColors.containerColor,

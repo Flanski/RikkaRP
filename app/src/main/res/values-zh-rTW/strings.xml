@@ -1781,4 +1781,7 @@
   <string name="setting_model_page_memory_model">記憶整理模型</string>
   <string name="setting_model_page_memory_model_desc">用於在背景將對話整理為長期記憶的模型；未設定時會使用快速模型</string>
   <string name="setting_model_page_memory_model_follow_fast">跟隨快速模型</string>
+  <string name="bottom_nav_chat">對話</string>
+  <string name="bottom_nav_assistant">助手</string>
+  <string name="chat_page_menu_assistant_settings">助手設定</string>
 </resources>

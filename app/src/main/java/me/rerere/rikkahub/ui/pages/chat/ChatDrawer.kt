@@ -236,14 +236,37 @@ fun MessagesPage(currentId: Uuid? = null) {
             label = stringResource(R.string.chat_page_menu_image_generation),
             icon = HugeIcons.Image02,
         ),
-        // 图A-4：助手选择
+        // 原「助手切换」→ 现在这里是「助手设置」（跳助理设置页）。
+        // 助手**切换**已挪到底部导航栏的【助手】项（见 MessagesBottomBar）。
         SharpDialogOption(
-            label = stringResource(R.string.chat_page_switch_assistant),
+            label = stringResource(R.string.chat_page_menu_assistant_settings),
             icon = HugeIcons.LookTop,
+        ),
+        // 原底部导航栏的「统计」项移入本弹窗（用户规范）。
+        SharpDialogOption(
+            label = stringResource(R.string.messages_bottom_stats),
+            icon = HugeIcons.ChartColumn,
         ),
     )
     val assistantMenuTitle = stringResource(R.string.assistant_page_title)
     val assistantNames = settings.assistants.map { it.name.ifEmpty { defaultAssistantName } }
+
+    /**
+     * 打开「助手切换」弹窗。
+     *
+     * 抽取成独立 lambda 的原因：它现在有**两个入口** ——
+     *   ① 底部导航栏的【助手】项（用户规范：该选项实际是助手切换功能）
+     *   ② 顶栏 ≡ 弹窗里已不再有「切换助手」，但保留此 lambda 便于将来复用
+     * 两处必须是同一份逻辑（切换后要按设置决定新建会话还是回到该助手的最近会话）。
+     */
+    val openAssistantSwitcher: () -> Unit = {
+        sharpDialog.showOptions(
+            title = assistantMenuTitle,
+            options = assistantNames.map { name -> SharpDialogOption(label = name, icon = HugeIcons.LookTop) },
+        ) { assistantIndex ->
+            settings.assistants.getOrNull(assistantIndex)?.let(selectAssistant)
+        }
+    }
 
     // 矮屏（如手表、横屏手机）上顶部固定会把会话列表挤没，改为跟随列表一起滚动
     val windowHeight = LocalWindowInfo.current.containerDpSize.height
@@ -378,18 +401,15 @@ fun MessagesPage(currentId: Uuid? = null) {
                                     sharpDialog.dismiss()
                                     navController.navigate(Screen.ImageGen)
                                 }
-                                // 图A-4：助手选择 —— 必须是**子页面**，
-                                // 用 pushOptions 才会播「父页左滑出、子页右滑入」。
-                                // 用 showOptions 的话 show() 会把 nav 重置成 RESET，
-                                // 那条分支是 fadeIn togetherWith fadeOut → 看起来就是渐变。
-                                3 -> sharpDialog.pushOptions(
-                                    title = assistantMenuTitle,
-                                    options = assistantNames.map { name ->
-                                        SharpDialogOption(label = name, icon = HugeIcons.LookTop)
-                                    },
-                                ) { assistantIndex ->
-                                    settings.assistants.getOrNull(assistantIndex)
-                                        ?.let(selectAssistant)
+                                // 助手设置页（原「助手切换」的位置）
+                                3 -> {
+                                    sharpDialog.dismiss()
+                                    navController.navigate(Screen.Assistant)
+                                }
+                                // 统计（原底部导航栏项）
+                                4 -> {
+                                    sharpDialog.dismiss()
+                                    navController.navigate(Screen.Stats)
                                 }
                             }
                         }
@@ -405,7 +425,10 @@ fun MessagesPage(currentId: Uuid? = null) {
             )
         },
         bottomBar = {
-            MessagesBottomBar(navController = navController)
+            MessagesBottomBar(
+                navController = navController,
+                onOpenAssistantSwitcher = openAssistantSwitcher,
+            )
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { contentPadding ->

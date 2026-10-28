@@ -28,11 +28,25 @@ import okhttp3.Request
  *
  * 上游用的是自建接口 https://updates.rikka-ai.com/ ，它只发布 RikkaHub 官方版本。
  * fork 改名为 RikkaRP 后必须换成自己的仓库，否则会把用户导向原版。
- * 这里直接读 GitHub Releases：
- *   仓库 https://github.com/Flanski/RikkaRP
- *   tag 形如 v3.1.1-rp.6（前导 v 会被去掉再比较版本）
+ *
+ * ## 为什么用 `/releases` 列表而不是 `/releases/latest`
+ *
+ * GitHub 的 `GET /repos/{owner}/{repo}/releases/latest` 定义是
+ * 「**the most recent non-prerelease, non-draft release**」——
+ * 也就是说它**永远不会返回标记为 Pre-release 的版本**。
+ *
+ * 而本项目早期只发 alpha（勾了 Pre-release），此时 `/latest` 会返回 404，
+ * 检查更新就永远拿不到数据。改用列表端点后：
+ *   · 取第一个 `draft == false` 的（**不排除** prerelease），alpha 也能被检到；
+ *   · 列表为空（仓库还没发过 Release）时返回空数组 → 走「与当前版本相同」的兜底，
+ *     首页不会出现红色「检查失败」卡片。
+ *
+ * 代价：列表接口比 `/latest` 多传几个字段（约几 KB），一次启动只请求一次，可忽略。
+ *
+ * 仓库：https://github.com/Flanski/RikkaRP
+ * tag 形如 v0.0.1 / v3.1.1-rp.6（前导 v 会被去掉再比较版本）
  */
-private const val API_URL = "https://api.github.com/repos/Flanski/RikkaRP/releases/latest"
+private const val API_URL = "https://api.github.com/repos/Flanski/RikkaRP/releases?per_page=10"
 
 class UpdateChecker(
     private val client: OkHttpClient,
@@ -64,33 +78,15 @@ class UpdateChecker(
                     ).await()
                     when {
                         response.isSuccessful -> {
-                            val release = json.decodeFromString<GithubRelease>(response.body.string())
-                            UpdateInfo(
-                                // tag 可能带前导 v
-                                version = release.tagName.removePrefix("v"),
-                                publishedAt = release.publishedAt,
-                                changelog = release.body.ifBlank { "No release notes." },
-                                downloads = release.assets
-                                    .filter { it.name.endsWith(".apk", ignoreCase = true) }
-                                    .map {
-                                        UpdateDownload(
-                                            name = it.name,
-                                            url = it.downloadUrl,
-                                            size = formatSize(it.size),
-                                        )
-                                    },
-                            )
+                            val releases = json.decodeFromString<List<GithubRelease>>(response.body.string())
+                            // 取第一个非草稿的。prerelease **不**排除 —— alpha 就是靠这个被检到。
+                            val release = releases.firstOrNull { !it.draft }
+                            release?.let { toUpdateInfo(it) } ?: noUpdate()
                         }
 
-                        // 仓库还没有任何 Release（或首个 Release 尚未发布）。
+                        // 仓库还没有任何 Release（或接口返回 404）。
                         // 这不是错误，返回「与当前版本相同」即可，避免首页出现红色「检查失败」卡片。
-                        // 注意 publishedAt 必须是合法 ISO-8601 —— UpdateCard 用 Instant.parse 解析。
-                        response.code == 404 -> UpdateInfo(
-                            version = BuildConfig.VERSION_NAME,
-                            publishedAt = Instant.now().toString(),
-                            changelog = "",
-                            downloads = emptyList(),
-                        )
+                        response.code == 404 -> noUpdate()
 
                         else -> throw Exception(
                             "Failed to fetch update info (HTTP ${response.code})"
@@ -104,6 +100,36 @@ class UpdateChecker(
     }.catch {
         emit(UiState.Error(it))
     }.flowOn(Dispatchers.IO)
+
+    /**
+     * 「没有可用的更新信息」时的占位。
+     *
+     * 返回 `version = 当前版本` 会让 UpdateCard 判定为「已是最新」，不显示红卡。
+     * `publishedAt` 必须是合法 ISO-8601 —— UpdateCard 用 `Instant.parse` 解析它。
+     */
+    private fun noUpdate(): UpdateInfo = UpdateInfo(
+        version = BuildConfig.VERSION_NAME,
+        publishedAt = Instant.now().toString(),
+        changelog = "",
+        downloads = emptyList(),
+    )
+
+    /** GitHub Release → 应用内 UpdateInfo。 */
+    private fun toUpdateInfo(release: GithubRelease): UpdateInfo = UpdateInfo(
+        // tag 可能带前导 v（v0.0.1 / v3.1.1-rp.6）
+        version = release.tagName.removePrefix("v"),
+        publishedAt = release.publishedAt.ifBlank { Instant.now().toString() },
+        changelog = release.body.ifBlank { "No release notes." },
+        downloads = release.assets
+            .filter { it.name.endsWith(".apk", ignoreCase = true) }
+            .map {
+                UpdateDownload(
+                    name = it.name,
+                    url = it.downloadUrl,
+                    size = formatSize(it.size),
+                )
+            },
+    )
 
     fun downloadUpdate(context: Context, download: UpdateDownload) {
         runCatching {
@@ -151,6 +177,10 @@ data class UpdateInfo(
 @Serializable
 private data class GithubRelease(
     @SerialName("tag_name") val tagName: String = "",
+    /** 草稿不发布给任何人，必须跳过。 */
+    val draft: Boolean = false,
+    /** Pre-release（alpha/beta）。**不**跳过 —— 见文件顶部 API_URL 的说明。 */
+    @SerialName("prerelease") val prerelease: Boolean = false,
     @SerialName("published_at") val publishedAt: String = "",
     val body: String = "",
     val assets: List<GithubAsset> = emptyList(),

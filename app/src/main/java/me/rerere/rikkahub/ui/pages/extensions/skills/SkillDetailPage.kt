@@ -21,16 +21,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -43,7 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
@@ -60,6 +56,8 @@ import me.rerere.hugeicons.stroke.File02
 import me.rerere.hugeicons.stroke.Folder01
 import me.rerere.hugeicons.stroke.FolderOpen
 import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
+import me.rerere.rikkahub.ui.components.sharp.SharpIconButton
 import me.rerere.rikkahub.ui.components.ui.CardGroupIcon
 import me.rerere.rikkahub.ui.components.ui.ItemAction
 import me.rerere.rikkahub.ui.components.ui.ItemActionMenu
@@ -78,7 +76,6 @@ fun SkillDetailPage(skillName: String) {
 
     val tree by vm.tree.collectAsStateWithLifecycle()
     val readOnly by vm.readOnly.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val toaster = LocalToaster.current
 
     var editingFile by remember { mutableStateOf<SkillFile?>(null) }
@@ -98,25 +95,20 @@ fun SkillDetailPage(skillName: String) {
 
     Scaffold(
         topBar = {
-            LargeFlexibleTopAppBar(
-                title = { Text(skillName) },
-                navigationIcon = { BackButton() },
-                scrollBehavior = scrollBehavior,
-                colors = CustomColors.topBarColors,
+            // RikkaRP: 顶栏统一成设置页样式；右下角悬浮「＋」并入顶栏右侧。
+            // 「＋」原来带显隐动画（fabVisible && !readOnly），并入顶栏后同样保留显示条件。
+            SharpTopBar(
+                title = skillName,
+                navigation = { BackButton() },
+                actions = {
+                    if (fabVisible && !readOnly) {
+                        SharpIconButton(onClick = { showAddDialog = true }) {
+                            Icon(HugeIcons.Add01, contentDescription = null)
+                        }
+                    }
+                },
             )
         },
-        floatingActionButton = {
-            AnimatedVisibility(
-                visible = fabVisible && !readOnly,
-                enter = fadeIn(SharpMotion.spec()) + scaleIn(SharpMotion.spec()),
-                exit = fadeOut(SharpMotion.spec()) + scaleOut(SharpMotion.spec()),
-            ) {
-                FloatingActionButton(onClick = { showAddDialog = true }) {
-                    Icon(HugeIcons.Add01, contentDescription = null)
-                }
-            }
-        },
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = CustomColors.topBarColors.containerColor,
     ) { innerPadding ->
         Column(

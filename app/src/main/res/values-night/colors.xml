@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- RikkaRP: 启动页背景（深色）。取 SharpUI 深色页面底色 -->
+  <color name="splash_background">#FF101418</color>
+</resources>

@@ -47,9 +47,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import me.rerere.rikkahub.ui.theme.CustomColors
 
-private val CardGroupCorner = 20.dp
+// 直角铁律：SharpUI 的形态语言是「直角」，卡片不做圆角。
+// 这两个值原来是 20dp / 4dp，按下时圆角还会在 4↔20 之间做动画 —— 都属圆角。
+// 统一归零后：外观是直角，按下也不再变圆角（Material 的 ripple 仍在，按压反馈不丢）。
+private val CardGroupCorner = 0.dp
 private val CardGroupItemSpacing = 2.dp
-private val CardGroupInnerCorner = 4.dp
+private val CardGroupInnerCorner = 0.dp
 
 private data class CardGroupItem(
     val onClick: (() -> Unit)?,

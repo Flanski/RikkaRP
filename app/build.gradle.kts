@@ -25,9 +25,15 @@ android {
         applicationId = "io.github.flanski.rikkarp"
         minSdk = 26
         targetSdk = 37
-        // RikkaRP: 上游 3.1.1 亦为 versionCode 194，本分支递增到 195 以免同码不同内容
-        versionCode = 217
-        versionName = "3.1.1-rp.23"
+        // RikkaRP: 自 0.0.1 起重置版本号（用户决定）。
+        //
+        // ⚠️ versionCode 从 219 归到 1 —— Android 不允许降级安装，
+        //   所以从 3.1.1-rp.25(#219) 升到本版**必须卸载重装**（数据会丢，需先备份）。
+        //   从本版往后每次发版必须严格递增，不要再回退。
+        //
+        // 血缘：rikkahub 3.1.1(versionCode 194) → RikkaRP 3.1.1-rp.1..25(#195..219) → 0.0.1(#1)
+        versionCode = 1
+        versionName = "0.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

@@ -5,6 +5,25 @@
 > 本项目以 **AGPL-3.0** 授权 —— 见 [LICENSE](LICENSE) 与 [NOTICE](NOTICE)。
 > 对应源码：https://github.com/Flanski/RikkaRP
 
+## 版本血缘与版本号说明
+
+| 项 | 值 |
+|---|---|
+| **fork 基线** | [rikkahub](https://github.com/rikkahub/rikkahub) **3.1.1**（官方 versionCode **194**，tag `3.1.1` / 提交 `ad2c443`）|
+| 本仓库早期内部版本 | `3.1.1-rp.1` … `3.1.1-rp.25`（versionCode 195–219）|
+| **正式对外版本起点** | **`0.0.1`**（versionCode **1**）—— 自本版起重置版本号，与上游编号脱钩 |
+
+> **为什么重置成 0.0.1**
+>
+> 早期沿用的 `3.1.1-rp.X` 是「上游版本号 + 内部修订号」，容易让人误以为是上游 3.1.1 的等价物。
+> 本分支已经有大量与上游不一致的改动（界面层、导航、弹窗、TTS 等），
+> 继续挂着 3.1.1 会误导版本预期，因此从 `0.0.1` 起独立编号。
+>
+> ⚠️ **从 `3.1.1-rp.25`(versionCode 219) 升级到 `0.0.1`(versionCode 1) 必须卸载重装** ——
+> Android 不允许 versionCode 降级。卸载会清空应用数据，请先备份。
+> 从 `0.0.1` 往后每次发版 versionCode 严格递增，不会再回退。
+
+
 <div align="center">
   <h1>RikkaRP</h1>
   <p><b>专注 LLM 驱动的角色扮演与视觉小说客户端</b></p>

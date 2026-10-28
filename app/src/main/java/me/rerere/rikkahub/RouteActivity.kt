@@ -142,6 +142,7 @@ import me.rerere.rikkahub.ui.pages.setting.SettingMediaProviderDetailPage
 import me.rerere.rikkahub.ui.pages.setting.SettingSpeechPage
 import me.rerere.rikkahub.ui.pages.setting.SettingWebPage
 import me.rerere.rikkahub.ui.pages.share.handler.ShareHandlerPage
+import me.rerere.rikkahub.ui.pages.splash.SplashPage
 import me.rerere.rikkahub.ui.pages.stats.StatsPage
 import me.rerere.rikkahub.ui.pages.translator.TranslatorPage
 import me.rerere.rikkahub.ui.pages.webview.WebViewPage
@@ -152,6 +153,7 @@ import okhttp3.OkHttpClient
 import org.koin.android.ext.android.inject
 import org.koin.compose.koinInject
 import kotlin.uuid.Uuid
+import kotlinx.coroutines.delay
 
 private const val TAG = "RouteActivity"
 private const val ACTION_TRANSLATE = "me.rerere.rikkahub.action.TRANSLATE"
@@ -299,14 +301,27 @@ class RouteActivity : ComponentActivity() {
         }
         val migrationState by DatabaseMigrationTracker.state.collectAsStateWithLifecycle()
 
-        // RikkaRP: 启动首页改为消息页（原抽屉里的会话列表）
-        val startScreen: Screen = Screen.Messages
+        // RikkaRP: 先停在启动页，预载完成后再进消息页（原抽屉里的会话列表）。
+        //   启动页会等待「真实设置 + 会话第一页」再放行，避免主页首帧渲染占位数据。
+        val startScreen: Screen = Screen.Splash
 
         val backStack = rememberNavBackStack(startScreen)
         SideEffect {
             navStack = backStack
             while (pendingIntents.isNotEmpty()) {
                 handleIntent(pendingIntents.removeFirst())
+            }
+        }
+
+        // RikkaRP: 启动页只是过渡，转场结束后从返回栈里摘掉，否则按返回键会退回启动页
+        // （退回去还会因为 LaunchedEffect 再次 navigate，表现为「返回键无效」）。
+        // 等 700ms 是让 NavDisplay 的原版转场（默认 spring）先走完再动栈，避免中途打断动画。
+        LaunchedEffect(backStack.size) {
+            if (backStack.size > 1 && backStack.firstOrNull() == Screen.Splash) {
+                delay(700)
+                if (backStack.firstOrNull() == Screen.Splash) {
+                    backStack.remove(Screen.Splash)
+                }
             }
         }
 
@@ -376,6 +391,15 @@ class RouteActivity : ComponentActivity() {
                                     text = key.text,
                                     files = key.files.map { it.toUri() },
                                     nodeId = key.nodeId?.let { Uuid.parse(it) }
+                                )
+                            }
+
+                            entry<Screen.Splash> {
+                                SplashPage(
+                                    navigator = Navigator(backStack),
+                                    settingsStore = settingsStore,
+                                    conversationRepository = koinInject(),
+                                    isStillTop = { backStack.lastOrNull() == Screen.Splash },
                                 )
                             }
 
@@ -677,7 +701,15 @@ sealed interface Screen : NavKey {
         val nodeId: String? = null
     ) : Screen
 
-    /** RikkaRP: 消息页（首页）——会话列表与入口，从原抽屉独立出来 */
+    /**
+     * RikkaRP: 启动页。作为 Nav 的第一个 entry，就绪后 navigate 到 [Messages]，
+     * 这样「启动页 -> 主页」的转场由 NavDisplay.transitionSpec 自己完成
+     * （backStack size 变 2 → 走 rikkahub 原版那条滑动分支），无需复制动画代码。
+     */
+    @Serializable
+    data object Splash : Screen
+
+    /** RikkaRP: 消息页（首页）——会话列表与入口，原抽屉独立出来 */
     @Serializable
     data object Messages : Screen
 

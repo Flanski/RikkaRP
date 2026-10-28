@@ -50,6 +50,20 @@ interface ConversationDAO {
     )
     suspend fun getRecentConversationsOfAssistant(assistantId: String, limit: Int): List<ConversationEntity>
 
+    /**
+     * 启动预热用：取「未归类」视图下、[since] 之后更新过的会话（轻量字段，不含消息体）。
+     *
+     * 与主页默认视图的查询条件保持一致（`folder_id = ''`），这样预热的正是首页会读的那批行。
+     * 只取轻量列 —— 消息体在 conversationentity 里是 JSON 大字段，启动时全量解析会拖慢首屏。
+     */
+    @Query(
+        "SELECT id, assistant_id as assistantId, title, is_pinned as isPinned, create_at as createAt, update_at as updateAt, folder_id as folderId FROM conversationentity WHERE assistant_id = :assistantId AND folder_id = '' AND update_at >= :since ORDER BY is_pinned DESC, update_at DESC"
+    )
+    suspend fun getUnfiledConversationsSince(
+        assistantId: String,
+        since: Long,
+    ): List<LightConversationEntity>
+
     @Query(
         "SELECT * FROM conversationentity WHERE title LIKE '%' || :searchText || '%' ORDER BY is_pinned DESC, update_at DESC"
     )

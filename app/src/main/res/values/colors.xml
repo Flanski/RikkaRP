@@ -7,4 +7,6 @@
   <color name="teal_700">#FF018786</color>
   <color name="black">#FF000000</color>
   <color name="white">#FFFFFFFF</color>
+  <!-- RikkaRP: 启动页背景。取 SharpUI 页面底色，与主页无缝衔接 -->
+  <color name="splash_background">#FFEEF1F5</color>
 </resources>

@@ -1,5 +1,6 @@
 package me.rerere.rikkahub.ui.components.sharp
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -64,6 +65,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.MaterialTheme
 import me.rerere.rikkahub.ui.theme.sharp.SharpColors
 import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import kotlin.math.pow
@@ -174,9 +176,24 @@ class SharpDialogController {
     /** 页面栈：只装被推进去的父页面，栈顶是当前页的直接父页。 */
     private val backStack = mutableListOf<SharpDialogSpec>()
 
+    /**
+     * 当前页是否**有可返回的上级页面**。
+     *
+     * 用 mutableStateOf 而不是普通字段：标题栏要据此在「类型图标」和「< 返回」之间切换，
+     * 必须是可观察状态，否则 push/pop 之后标题栏不会重组。
+     */
+    var canGoBack: Boolean by mutableStateOf(false)
+        private set
+
+    /** 每次栈变化后同步 [canGoBack]。 */
+    private fun syncCanGoBack() {
+        canGoBack = backStack.isNotEmpty()
+    }
+
     /** 打开弹窗（作为顶层页面），会清空页面栈。 */
     fun show(spec: SharpDialogSpec) {
         backStack.clear()
+        syncCanGoBack()
         nav = SheetNav.RESET
         current = spec
     }
@@ -187,6 +204,7 @@ class SharpDialogController {
      */
     fun push(spec: SharpDialogSpec) {
         current?.let { backStack.add(it) }
+        syncCanGoBack()
         nav = SheetNav.FORWARD
         current = spec
     }
@@ -194,6 +212,7 @@ class SharpDialogController {
     /** 返回上一级；返回 false 表示已在顶层。 */
     fun pop(): Boolean {
         val previous = backStack.removeLastOrNull() ?: return false
+        syncCanGoBack()
         nav = SheetNav.BACK
         current = previous
         return true
@@ -207,6 +226,7 @@ class SharpDialogController {
     fun dismiss() {
         nav = SheetNav.RESET
         backStack.clear()
+        syncCanGoBack()
         current = null
     }
 
@@ -609,14 +629,29 @@ private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
                     alpha = v
                     transformOrigin = TransformOrigin.Center
                 }
-                .background(SharpColors.DialogNormal)
+                // 弹窗底色 = 页面底色（浅色 #EEF1F5 / 深色 #101418）。
+                // 用 colorScheme.background 而不是写死色值，深色模式才能跟着走。
+                .background(MaterialTheme.colorScheme.background)
                 // 吃掉落在弹窗体上的点击，避免穿透到遮罩把弹窗关掉
                 .pointerInput(Unit) {
                     detectTapGestures { /* 仅用于拦截 */ }
                 },
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                DialogHeader(current)
+                // ── 系统返回键 ──────────────────────────────────────────────
+                // 用户规范：「按下 android 系统返回键也是触发弹窗页面返回」。
+                // 关闭弹窗的唯一途径是点击遮罩（或显式按钮），所以这里**不做** back()，
+                // 而是：有上级 -> 回上一级；已在顶层 -> 什么也不做（吞掉事件，
+                // 避免误触把底层页面也退掉）。
+                BackHandler(enabled = true) {
+                    if (controller.canGoBack) controller.pop()
+                }
+
+                DialogHeader(
+                    spec = current,
+                    canGoBack = controller.canGoBack,
+                    onBack = { controller.back() },
+                )
 
                 // —— 弹窗内子页切换：父页向左滑出、子页自右滑入 ——
                 AnimatedContent(
@@ -676,7 +711,17 @@ private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
 }
 
 @Composable
-private fun DialogHeader(spec: SharpDialogSpec) {
+private fun DialogHeader(
+    spec: SharpDialogSpec,
+    canGoBack: Boolean,
+    onBack: () -> Unit,
+) {
+    // ── 标题栏配色（用户规范）─────────────────────────────────────────
+    // 「保留标题栏，标题标准蓝背景，白色加粗字体」
+    //   Normal  -> 标准蓝 DialogNormal(#409EFF) + 白字
+    //   Warning -> 橙 + 黑字（橙底白字对比度不足）
+    //   Error   -> 红 + 白字
+    // 内容区仍是浅灰（见 DialogBody），所以标题栏是「蓝条 + 灰面」的卡片式结构。
     val headerColor = when (spec.type) {
         SharpDialogType.Normal -> SharpColors.DialogNormal
         SharpDialogType.Warning -> SharpColors.DialogWarning
@@ -694,7 +739,12 @@ private fun DialogHeader(spec: SharpDialogSpec) {
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SharpDialogIcon(type = spec.type, color = foreground)
+        // 有上级页面时，左侧图标换成「<」用于返回；否则保留类型图标。
+        if (canGoBack) {
+            BackChevron(color = foreground, onClick = onBack)
+        } else {
+            SharpDialogIcon(type = spec.type, color = foreground)
+        }
         Spacer(Modifier.width(10.dp))
         androidx.compose.material3.Text(
             text = spec.title,
@@ -703,6 +753,45 @@ private fun DialogHeader(spec: SharpDialogSpec) {
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
         )
+    }
+}
+
+/**
+ * 标题栏左侧的返回箭头「<」。
+ *
+ * 用 Canvas 手绘而不是引入图标库：造型要与 [SharpDialogIcon] 同风格
+ * （20dp 方框、2px 线性描边、圆头），这样在「类型图标 ↔ 返回箭头」之间切换时
+ * 视觉重量一致，不会一跳一跳。
+ */
+@Composable
+private fun BackChevron(color: Color, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(20.dp)
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { onClick() })
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val unit = size.minDimension / 24f
+            val sw = 2f * unit
+            // 「<」：从右上 -> 左中 -> 右下
+            drawLine(
+                color = color,
+                start = Offset(15f * unit, 5f * unit),
+                end = Offset(8f * unit, 12f * unit),
+                strokeWidth = sw,
+                cap = StrokeCap.Round,
+            )
+            drawLine(
+                color = color,
+                start = Offset(8f * unit, 12f * unit),
+                end = Offset(15f * unit, 19f * unit),
+                strokeWidth = sw,
+                cap = StrokeCap.Round,
+            )
+        }
     }
 }
 
@@ -716,11 +805,12 @@ private fun DialogBody(
     SharpScrollColumn(
         modifier = modifier
             .fillMaxWidth()
-            .background(SharpColors.DialogNormal),
+            .background(MaterialTheme.colorScheme.background),
         state = scrollState,
         contentPadding = PaddingValues(16.dp),
-        scrollBarColor = SharpColors.White50,
-        scrollBarTrackColor = SharpColors.White20,
+        // 滚动条原来是白色系（给蓝底用），浅灰底上看不见，改用描边色
+        scrollBarColor = MaterialTheme.colorScheme.outline,
+        scrollBarTrackColor = MaterialTheme.colorScheme.outlineVariant,
         nestedScrollConnection = nestedScrollConnection,
     ) {
         val custom = spec.content
@@ -729,7 +819,7 @@ private fun DialogBody(
         } else {
             androidx.compose.material3.Text(
                 text = spec.message,
-                color = SharpColors.White,
+                color = MaterialTheme.colorScheme.primary,
                 fontSize = 14.sp,
                 lineHeight = 22.sp,
             )
@@ -750,7 +840,7 @@ private fun DialogFooter(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SharpColors.DialogNormal)
+            .background(MaterialTheme.colorScheme.background)
             // 底部形态/全屏形态贴到屏幕底边，必须避让系统导航栏（三大金刚键/手势条），
             // 否则按钮会被压在导航栏下面点不到。
             .then(if (isBottomSheet || spec.placement == SharpDialogPlacement.Full) {
@@ -803,8 +893,14 @@ private fun DialogFooterButton(
         }
     }
 
-    val bg = if (primary) SharpColors.White else SharpColors.White20
-    val fg = if (primary) SharpColors.DialogNormal else SharpColors.White
+    // 弹窗底色从蓝改成浅灰后，原来的「白底蓝字」在灰底上几乎看不见，
+    // 主次按钮因此反过来：主按钮＝蓝底白字，次按钮＝透明底蓝字。
+    val bg = if (primary) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        androidx.compose.ui.graphics.Color.Transparent
+    }
+    val fg = if (primary) SharpColors.White else MaterialTheme.colorScheme.primary
 
     Box(
         modifier = Modifier
@@ -914,7 +1010,8 @@ internal fun SharpOptionsList(
     Column {
         options.forEachIndexed { index, option ->
             if (index > 0) {
-                SharpDivider(color = SharpColors.White30)
+                // 原来是白色分隔线（给蓝底用），浅灰底上用默认描边色
+                SharpDivider()
             }
             Row(
                 modifier = Modifier
@@ -931,13 +1028,13 @@ internal fun SharpOptionsList(
                         imageVector = icon,
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
-                        tint = SharpColors.White,
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(Modifier.width(12.dp))
                 }
                 androidx.compose.material3.Text(
                     text = option.label,
-                    color = SharpColors.White,
+                    color = MaterialTheme.colorScheme.primary,
                     fontSize = 15.sp,
                 )
             }

@@ -154,6 +154,34 @@ class ConversationRepository(
         }
     }
 
+    /**
+     * 启动页预热：读取当前助手「最近一周」的会话（轻量字段）。
+     *
+     * ## 它到底有什么用（不要夸大）
+     *
+     * 预读的数据**不会**被主页的 Paging 直接复用 —— PagingData 是事件流，页面外读不到内容。
+     * 真正被预热的是：
+     *   1. SQLite 页缓存（同一个表、同一批行，Paging 首次查询时不必再走磁盘）；
+     *   2. Room 的实体映射与 `conversationSummaryToConversation` 的转换路径（JIT 预热）。
+     *
+     * 所以这一步是把「冷启动第一次查询」的成本提前到启动页，而不是取代 Paging。
+     *
+     * @param sinceEpochMillis 起始时间（含），与 `updateAt` 同为毫秒时间戳
+     * @return 预热的会话条数（仅用于日志/诊断）
+     */
+    suspend fun preloadRecentConversations(
+        assistantId: Uuid,
+        sinceEpochMillis: Long,
+    ): Int {
+        val rows = conversationDAO.getUnfiledConversationsSince(
+            assistantId = assistantId.toString(),
+            since = sinceEpochMillis,
+        )
+        // 走一遍转换，预热实体→领域模型的路径（失败不影响启动）
+        runCatching { rows.forEach { conversationSummaryToConversation(it) } }
+        return rows.size
+    }
+
     suspend fun searchConversationsOfAssistantPage(
         assistantId: Uuid,
         titleKeyword: String,

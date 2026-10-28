@@ -30,7 +30,6 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -58,6 +57,8 @@ import me.rerere.hugeicons.stroke.View
 import me.rerere.hugeicons.stroke.ViewOff
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.ui.components.nav.BackButton
+import me.rerere.rikkahub.ui.components.sharp.SharpTopBar
+import me.rerere.rikkahub.ui.components.sharp.SharpIconButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.CardGroupIcon
 import me.rerere.rikkahub.ui.context.LocalNavController
@@ -93,15 +94,19 @@ fun WorkspaceSshEditorPage(id: String?) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(if (vm.isNew) stringResource(R.string.workspace_ssh_editor_title_new) else stringResource(R.string.workspace_ssh_editor_title_edit)) },
-                navigationIcon = { BackButton() },
+            // RikkaRP: 顶栏统一成设置页样式
+            SharpTopBar(
+                title = if (vm.isNew) {
+                    stringResource(R.string.workspace_ssh_editor_title_new)
+                } else {
+                    stringResource(R.string.workspace_ssh_editor_title_edit)
+                },
+                navigation = { BackButton() },
                 actions = {
-                    IconButton(onClick = vm::save, enabled = !state.busy) {
+                    SharpIconButton(onClick = vm::save, enabled = !state.busy) {
                         Icon(HugeIcons.Tick02, contentDescription = stringResource(R.string.workspace_ssh_editor_save))
                     }
                 },
-                colors = CustomColors.topBarColors,
             )
         },
         containerColor = CustomColors.topBarColors.containerColor,
