@@ -16,6 +16,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -50,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -444,6 +446,14 @@ private enum class Phase { IDLE, OPENING, OPEN, CLOSING }
  *   这是一个实验性开关，用户要对比两种手感。
  */
 private const val UsePageTransitionInDialog = true
+
+/**
+ * 弹窗底部按钮的描边色。
+ *
+ * 半透明白：压在 #409EFF 蓝底上是"亮边"，一眼能把按钮和弹窗的浅灰底色分开；
+ * 深色模式下弹窗底色是 #20262E，同一圈亮边同样成立，不必分主题。
+ */
+private val ButtonBorder = Color(0x66FFFFFF)
 
 @Composable
 private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
@@ -896,20 +906,27 @@ private fun DialogFooterButton(
         }
     }
 
-    // 弹窗底色从蓝改成浅灰后，原来的「白底蓝字」在灰底上几乎看不见，
-    // 主次按钮因此反过来：主按钮＝蓝底白字，次按钮＝透明底蓝字。
-    val bg = if (primary) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        androidx.compose.ui.graphics.Color.Transparent
-    }
-    val fg = if (primary) SharpColors.White else MaterialTheme.colorScheme.primary
+    // ── 底栏按钮样式（用户规范）───────────────────────────────────────
+    // 「无圆角，有边框以区分按钮和背景，有果冻挤压特效，
+    //   标准蓝色背景，按钮字色为 app 背景色」
+    //
+    // · 蓝底：colorScheme.primary = SharpColors.Blue #409EFF
+    // · 字色：colorScheme.background —— 即「app 背景色」
+    // · 边框：半透明白 1dp，在蓝底上形成一圈亮边，把按钮从弹窗底色里"抠"出来
+    // · 圆角：不加任何 shape，background()/border() 默认都是 RectangleShape → 直角
+    // · 果冻：见上面的 scale 动画（按下 1.06 线性放大、松开低阻尼弹簧回弹）
+    //
+    // 说明：规范描述的是一套统一样式，所以 primary / secondary **视觉一致**。
+    // primary 目前只保留在 API 里（调用方仍在传），供日后需要区分时使用。
+    val bg = MaterialTheme.colorScheme.primary
+    val fg = MaterialTheme.colorScheme.background
 
     Box(
         modifier = Modifier
             .graphicsLayer { scaleX = scale.value; scaleY = scale.value }
             .heightIn(min = 34.dp)
             .background(bg)
+            .border(width = 1.dp, color = ButtonBorder, shape = RectangleShape)
             .pointerInput(Unit) {
                 detectTapGestures(onTap = { onClick() })
             }

@@ -1,6 +1,7 @@
 package me.rerere.rikkahub.data.repository
 
 import android.database.sqlite.SQLiteBlobTooBigException
+import android.util.LruCache
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -27,6 +28,8 @@ import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.utils.JsonInstant
 import java.time.Instant
 import kotlin.uuid.Uuid
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class ConversationRepository(
     private val conversationDAO: ConversationDAO,
@@ -39,6 +42,46 @@ class ConversationRepository(
     companion object {
         private const val PAGE_SIZE = 20
         private const val INITIAL_LOAD_SIZE = 40
+
+        /**
+         * 已解码会话的缓存条数上限。
+         *
+         * 一个会话的 `Conversation` 含全部消息节点，体积可能很大（实测有 1024 条消息的会话）。
+         * 所以按**条数**限制而不是字节，并配合 [MAX_CACHED_NODES] 再兜一层：
+         * 节点数超限的会话不进缓存 —— 宁可让它每次现读，也不能把内存吃满。
+         */
+        private const val MAX_CACHED_CONVERSATIONS = 6
+
+        /** 单会话缓存门槛：节点数超过这个值就不缓存（防止超大会话占满内存）。 */
+        private const val MAX_CACHED_NODES = 2000
+
+        /** 启动预载：最多完整解码几个会话。 */
+        private const val PRELOAD_MAX_CONVERSATIONS = 4
+
+        /** 启动预载：累计消息节点总预算（超过就停，防止 OOM）。 */
+        private const val PRELOAD_NODE_BUDGET = 3000
+    }
+
+    /**
+     * 「已解码会话」缓存。
+     *
+     * ## 为什么需要它
+     *
+     * 打开会话的真实开销不是 SQL，而是 `loadMessageNodes` 里对每条 node 的
+     * `JsonInstant.decodeFromString<List<UIMessage>>(...)` —— 消息体是一大坨 JSON，
+     * 解码是纯 CPU 操作。启动页即使把 SQL 预热了，点开时**仍然要再解码一遍**。
+     *
+     * 这份缓存让启动页预载的解码结果能被打开会话时直接复用。
+     *
+     * ## 一致性
+     *
+     * 任何写操作都必须 [invalidateDecodedCache]，否则会读到旧数据。
+     * 已在 insert/update/delete/saveMessageNodes/各 update* 中逐一调用。
+     */
+    private val decodedCache = object : LruCache<Uuid, Conversation>(MAX_CACHED_CONVERSATIONS) {}
+
+    private fun invalidateDecodedCache(id: Uuid) {
+        decodedCache.remove(id)
     }
 
     suspend fun hasFileReference(fileUrl: String): Boolean =
@@ -155,19 +198,27 @@ class ConversationRepository(
     }
 
     /**
-     * 启动页预热：读取当前助手「最近一周」的会话（轻量字段）。
+     * 启动页预载：当前助手「最近一周」的会话。
      *
-     * ## 它到底有什么用（不要夸大）
+     * ## 分两步，作用不同
      *
-     * 预读的数据**不会**被主页的 Paging 直接复用 —— PagingData 是事件流，页面外读不到内容。
-     * 真正被预热的是：
-     *   1. SQLite 页缓存（同一个表、同一批行，Paging 首次查询时不必再走磁盘）；
-     *   2. Room 的实体映射与 `conversationSummaryToConversation` 的转换路径（JIT 预热）。
+     * **第一步 · 列表元数据**（轻量列，全量）
+     * 与主页 Paging 首次查询命中同一批行，把 SQLite 页缓存和实体映射路径焐热。
      *
-     * 所以这一步是把「冷启动第一次查询」的成本提前到启动页，而不是取代 Paging。
+     * **第二步 · 会话内容解码**（重活，按预算截断）
+     * `loadMessageNodes` 里逐条 `JsonInstant.decodeFromString<List<UIMessage>>` 才是
+     * 「点开会话卡一下」的真凶 —— 纯 CPU 解码，SQL 预热救不了。
+     * 这一步把最近若干会话**完整解码**并放进 [decodedCache]，
+     * 于是点开时 `getConversationById` 直接命中缓存，不再解码。
+     *
+     * ## 为什么必须截断
+     *
+     * 一个会话可能上千条消息，把一周内所有会话全部解码进内存会直接 OOM。
+     * 因此按「最多 N 个会话 / 累计不超过 M 个消息节点」双预算截断，
+     * 超预算的会话跳过 —— 它们点开时走正常路径（仍比改之前快，因为不在主线程解码）。
      *
      * @param sinceEpochMillis 起始时间（含），与 `updateAt` 同为毫秒时间戳
-     * @return 预热的会话条数（仅用于日志/诊断）
+     * @return 实际解码进缓存的会话数（供日志/诊断）
      */
     suspend fun preloadRecentConversations(
         assistantId: Uuid,
@@ -177,9 +228,28 @@ class ConversationRepository(
             assistantId = assistantId.toString(),
             since = sinceEpochMillis,
         )
-        // 走一遍转换，预热实体→领域模型的路径（失败不影响启动）
+        // —— 第一步：预热列表元数据转换路径 ——
         runCatching { rows.forEach { conversationSummaryToConversation(it) } }
-        return rows.size
+
+        // —— 第二步：按预算解码会话内容进缓存 ——
+        var decoded = 0
+        var nodeBudget = PRELOAD_NODE_BUDGET
+        for (row in rows) {
+            if (decoded >= PRELOAD_MAX_CONVERSATIONS || nodeBudget <= 0) break
+            val id = runCatching { Uuid.parse(row.id) }.getOrNull() ?: continue
+            if (decodedCache.get(id) != null) continue
+
+            val conversation = runCatching { getConversationById(id) }.getOrNull() ?: continue
+            nodeBudget -= conversation.messageNodes.size
+            // 刚好超预算的那个会话不进缓存（getConversationById 内部按 MAX_CACHED_NODES 判断，
+            // 这里再按累计预算把已放入的移除，避免累积占用）
+            if (nodeBudget < 0) {
+                invalidateDecodedCache(id)
+                break
+            }
+            decoded++
+        }
+        return decoded
     }
 
     suspend fun searchConversationsOfAssistantPage(
@@ -320,13 +390,26 @@ class ConversationRepository(
         }
 
     suspend fun getConversationById(uuid: Uuid): Conversation? {
-        val entity = conversationDAO.getConversationById(uuid.toString())
-        return if (entity != null) {
+        // 命中启动页预载的解码结果 → 直接返回，不再解码
+        decodedCache.get(uuid)?.let { return it }
+
+        // ★ 整段显式切到 IO。
+        //   Room 的 suspend DAO 与 withTransaction 本身会切线程，但
+        //   `conversationEntityToConversation`（内有多处 JsonInstant.decodeFromString）
+        //   是**在调用方上下文**里执行的。调用方 ChatVM 用的是 viewModelScope
+        //   = Dispatchers.Main.immediate，于是这几处 JSON 解码原本压在主线程上，
+        //   直接把页面转场的动画帧吃掉（用户反馈的「卡住约 100ms」）。
+        val conversation = withContext(Dispatchers.IO) {
+            val entity = conversationDAO.getConversationById(uuid.toString()) ?: return@withContext null
             val nodes = loadMessageNodes(entity.id)
             conversationEntityToConversation(entity, nodes)
-        } else {
-            null
+        } ?: return null
+
+        // 超大会话不进缓存：宁可每次现读，也不让 LRU 里塞进一个几百 MB 的对象
+        if (conversation.messageNodes.size <= MAX_CACHED_NODES) {
+            decodedCache.put(uuid, conversation)
         }
+        return conversation
     }
 
     suspend fun existsConversationById(uuid: Uuid): Boolean {
@@ -344,6 +427,7 @@ class ConversationRepository(
     }
 
     suspend fun insertConversation(conversation: Conversation) {
+        invalidateDecodedCache(conversation.id)
         database.withTransaction {
             conversationDAO.insert(
                 conversationToConversationEntity(conversation)
@@ -354,6 +438,7 @@ class ConversationRepository(
     }
 
     suspend fun updateConversation(conversation: Conversation) {
+        invalidateDecodedCache(conversation.id)
         database.withTransaction {
             conversationDAO.update(
                 conversationToConversationEntity(conversation)
@@ -366,6 +451,7 @@ class ConversationRepository(
     }
 
     suspend fun deleteConversation(conversation: Conversation) {
+        invalidateDecodedCache(conversation.id)
         // 获取完整的 Conversation（包含 messageNodes）以正确清理文件
         val fullConversation = if (conversation.messageNodes.isEmpty()) {
             getConversationById(conversation.id) ?: conversation
@@ -458,6 +544,7 @@ class ConversationRepository(
     }
 
     suspend fun updatePinStatus(conversationId: Uuid, isPinned: Boolean) {
+        invalidateDecodedCache(conversationId)
         conversationDAO.updatePinStatus(
             id = conversationId.toString(),
             isPinned = isPinned,
@@ -465,6 +552,7 @@ class ConversationRepository(
     }
 
     suspend fun updateConversationAssistant(conversationId: Uuid, assistantId: Uuid) {
+        invalidateDecodedCache(conversationId)
         conversationDAO.updateAssistantId(conversationId.toString(), assistantId.toString())
     }
 
@@ -472,6 +560,7 @@ class ConversationRepository(
      * 只更新会话持有的配置（含注入绑定和工作目录），不重写消息节点。
      */
     suspend fun updateConversationConfig(conversation: Conversation) {
+        invalidateDecodedCache(conversation.id)
         conversationDAO.updateConfig(
             id = conversation.id.toString(),
             config = conversation.config?.let { JsonInstant.encodeToString(it) } ?: "",
@@ -482,14 +571,17 @@ class ConversationRepository(
     }
 
     suspend fun updateTitle(conversationId: Uuid, title: String) {
+        invalidateDecodedCache(conversationId)
         conversationDAO.updateTitle(conversationId.toString(), title)
     }
 
     suspend fun updateCustomSystemPrompt(conversationId: Uuid, customSystemPrompt: String?) {
+        invalidateDecodedCache(conversationId)
         conversationDAO.updateCustomSystemPrompt(conversationId.toString(), customSystemPrompt ?: "")
     }
 
     suspend fun updateChatSuggestions(conversationId: Uuid, chatSuggestions: List<String>) {
+        invalidateDecodedCache(conversationId)
         conversationDAO.updateChatSuggestions(
             id = conversationId.toString(),
             chatSuggestions = JsonInstant.encodeToString(chatSuggestions),
@@ -500,6 +592,7 @@ class ConversationRepository(
      * 单列更新会话的文件夹归属，folderId 为 null 表示移出文件夹（未归类）。
      */
     suspend fun updateConversationFolderId(conversationId: Uuid, folderId: Uuid?) {
+        invalidateDecodedCache(conversationId)
         conversationDAO.updateFolderId(
             id = conversationId.toString(),
             folderId = folderId?.toString() ?: ""
@@ -564,6 +657,8 @@ class ConversationRepository(
     }
 
     private suspend fun saveMessageNodes(conversationId: String, nodes: List<MessageNode>) {
+        // 消息体变了，缓存必然失效（insert/updateConversation 已先失效一次，这里兜底）
+        runCatching { invalidateDecodedCache(Uuid.parse(conversationId)) }
         val entities = nodes.mapIndexed { index, node ->
             MessageNodeEntity(
                 id = node.id.toString(),
