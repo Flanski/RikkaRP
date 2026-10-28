@@ -629,9 +629,10 @@ private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
                     alpha = v
                     transformOrigin = TransformOrigin.Center
                 }
-                // 弹窗底色 = 页面底色（浅色 #EEF1F5 / 深色 #101418）。
-                // 用 colorScheme.background 而不是写死色值，深色模式才能跟着走。
-                .background(MaterialTheme.colorScheme.background)
+                // 弹窗底色 = **设置页同款**（surfaceContainer：浅色 #E4E9F0 / 深色 #20262E）。
+                // 用户规范：「弹窗内容：和设置页等其他页面的浅灰色背景同样」。
+                // 注意这里不能用 colorScheme.background —— 那是主页底色 #EEF1F5，与设置页不同。
+                .background(MaterialTheme.colorScheme.surfaceContainer)
                 // 吃掉落在弹窗体上的点击，避免穿透到遮罩把弹窗关掉
                 .pointerInput(Unit) {
                     detectTapGestures { /* 仅用于拦截 */ }
@@ -805,7 +806,7 @@ private fun DialogBody(
     SharpScrollColumn(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.surfaceContainer),
         state = scrollState,
         contentPadding = PaddingValues(16.dp),
         // 滚动条原来是白色系（给蓝底用），浅灰底上看不见，改用描边色
@@ -819,7 +820,9 @@ private fun DialogBody(
         } else {
             androidx.compose.material3.Text(
                 text = spec.message,
-                color = MaterialTheme.colorScheme.primary,
+                // 正文色与设置页正文同步（onSurface = Ink #12161B）。
+                // 蓝字是 rp.25 的旧决定，本轮按「字色同步」改成墨色。
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 14.sp,
                 lineHeight = 22.sp,
             )
@@ -840,7 +843,7 @@ private fun DialogFooter(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
             // 底部形态/全屏形态贴到屏幕底边，必须避让系统导航栏（三大金刚键/手势条），
             // 否则按钮会被压在导航栏下面点不到。
             .then(if (isBottomSheet || spec.placement == SharpDialogPlacement.Full) {
@@ -1028,13 +1031,13 @@ internal fun SharpOptionsList(
                         imageVector = icon,
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(Modifier.width(12.dp))
                 }
                 androidx.compose.material3.Text(
                     text = option.label,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 15.sp,
                 )
             }
