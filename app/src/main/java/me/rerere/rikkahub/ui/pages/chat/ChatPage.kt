@@ -90,6 +90,8 @@ import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.ui.components.ai.ToolsSheet
+import me.rerere.rikkahub.ui.components.sharp.LocalSharpDialog
 
 @Composable
 fun ChatPage(id: Uuid, text: String?, files: List<Uri>, nodeId: Uuid? = null) {
@@ -212,6 +214,8 @@ private fun ChatPageContent(
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
     val workspaceRepository: WorkspaceRepository = koinInject()
+    // 「工具」按钮用的 SharpUI 弹窗控制器（与全库其它弹窗同一份实现）
+    val toolsDialog = LocalSharpDialog.current
 
     var previewMode by rememberSaveable { mutableStateOf(false) }
     val hazeState = rememberHazeState()
@@ -270,6 +274,22 @@ private fun ChatPageContent(
                     onStartVoiceMode = onStartVoiceMode,
                     voiceState = voiceState,
                     onStopVoiceMode = vm.voiceSession::stop,
+                    // 工具按钮 → SharpUI 2/3 弹窗（基础工具 / 拓展工具）。
+                    // 子页面全部走 SharpDialog 的 push/pop，导航逻辑与其它弹窗共用一份。
+                    onOpenTools = {
+                        val dialog = toolsDialog
+                        ToolsSheet.show(
+                            dialog = dialog,
+                            onPushBase = {
+                                ToolsSheet.pushBaseTools(
+                                    dialog = dialog,
+                                    assistant = assistant,
+                                    onUpdateAssistant = vm::updateAssistant,
+                                )
+                            },
+                            onPushExt = { ToolsSheet.pushExtTools(dialog) },
+                        )
+                    },
                     state = inputState,
                     messageQueue = messageQueue,
                     onRemoveQueuedMessage = vm::removeQueuedMessage,
@@ -431,6 +451,17 @@ private fun ChatFilesPickerSheet(
         onDismiss()
     }
 
+    // ══════════════════════════════════════════════════════════════════
+    // 容器：SharpDialog（rp.28）
+    //
+    // 原实现用 ModalBottomSheet —— 那是第三套弹窗容器（另两套是 SharpDialog
+    // 与 M3 Dialog），样式与导航逻辑都要各写一遍。
+    // 现在统一到 SharpDialog：2/3 高度、标题栏、返回箭头、系统返回键、
+    // 遮罩点击关闭全部由它提供，本组件只负责内容。
+    //
+    // 原实现保留在下方注释里以便回退。
+    // ══════════════════════════════════════════════════════════════════
+    /*
     val filesSheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
@@ -439,7 +470,9 @@ private fun ChatFilesPickerSheet(
         sheetState = filesSheetState,
         onDismissRequest = { dismissAll() },
     ) {
+    */
         FilesPicker(
+            dialog = LocalSharpDialog.current,
             conversation = conversation,
             state = inputState,
             assistant = assistant,
@@ -478,7 +511,7 @@ private fun ChatFilesPickerSheet(
                 }
             } else null,
         )
-    }
+    // }
 }
 
 @Composable

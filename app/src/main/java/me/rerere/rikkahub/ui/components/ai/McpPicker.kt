@@ -208,6 +208,8 @@ internal fun McpPickerPage(
     mcpManager: McpManager,
     onUpdateAssistant: (Assistant) -> Unit,
     onBack: () -> Unit,
+    /** SharpDialog 作容器时会自己画标题栏与返回箭头，此时跳过本页自带表头。 */
+    showHeader: Boolean = true,
 ) {
     val status by mcpManager.syncingStatus.collectAsStateWithLifecycle()
     val loading = status.values.any { it == McpStatus.Connecting }
@@ -218,14 +220,16 @@ internal fun McpPickerPage(
             .fillMaxHeight(0.7f)
             .padding(horizontal = 16.dp),
     ) {
-        SheetHeader(
-            title = stringResource(R.string.mcp_picker_title),
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(HugeIcons.ArrowLeft01, contentDescription = stringResource(R.string.back))
-                }
-            },
-        )
+        if (showHeader) {
+            SheetHeader(
+                title = stringResource(R.string.mcp_picker_title),
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(HugeIcons.ArrowLeft01, contentDescription = stringResource(R.string.back))
+                    }
+                },
+            )
+        }
         AnimatedVisibility(
             visible = loading,
             modifier = Modifier.align(Alignment.CenterHorizontally),

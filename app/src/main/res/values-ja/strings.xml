@@ -1786,4 +1786,13 @@ mDNSアドレス: .localホスト名を使用し、IPを知らなくても同じ
   <string name="bottom_nav_chat">チャット</string>
   <string name="bottom_nav_assistant">アシスタント</string>
   <string name="chat_page_menu_assistant_settings">アシスタント設定</string>
+  <string name="tool_sheet_javascript">JavaScript エンジン</string>
+  <string name="tool_sheet_time">時刻情報</string>
+  <string name="tool_sheet_clipboard">クリップボード</string>
+  <string name="tool_sheet_tts">音声合成</string>
+  <string name="tool_sheet_ask_user">ユーザーに質問</string>
+  <string name="tool_sheet_screen_time">スクリーンタイム</string>
+  <string name="tool_sheet_calendar">カレンダー</string>
+  <string name="tool_sheet_chart">グラフ表示</string>
+  <string name="tools">ツール</string>
 </resources>

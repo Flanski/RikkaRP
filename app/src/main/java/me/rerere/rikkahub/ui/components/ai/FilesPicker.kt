@@ -84,6 +84,21 @@ import me.rerere.rikkahub.ui.theme.sharp.SharpMotion
 import me.rerere.rikkahub.utils.formatNumber
 import me.rerere.workspace.WorkspaceShellStatus
 import org.koin.compose.koinInject
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.RectangleShape
+import me.rerere.rikkahub.ui.components.sharp.SharpDialogController
+import me.rerere.rikkahub.ui.components.sharp.SharpDialogPlacement
+import me.rerere.rikkahub.ui.components.sharp.SharpDialogSpec
+import androidx.compose.runtime.SideEffect
 
 // 顺序决定切换方向：往后是进入下一级，往前是返回
 private enum class FilesPickerPage {
@@ -123,6 +138,14 @@ internal fun FilesPicker(
     onPickFile: () -> Unit,
     onSketch: () -> Unit,
     onStartVoiceMode: (() -> Unit)? = null,
+    /**
+     * 承载本弹窗的 SharpUI 弹窗控制器（全库共用一份实现）。
+     *
+     * 改造要点（rp.28）：弹窗容器从 `ModalBottomSheet` 换成 `SharpDialog`，
+     * 于是「2/3 高度 / 标题栏 / 返回箭头 / 系统返回键 / 遮罩点击关闭」
+     * 全部由 SharpDialog 提供，不再各写一套。
+     */
+    dialog: SharpDialogController,
 ) {
     val settings = LocalSettings.current
     val provider = chatModel?.findProvider(providers = settings.providers)
@@ -137,10 +160,38 @@ internal fun FilesPicker(
     var showCwdSheet by remember { mutableStateOf(false) }
 
     var page by remember { mutableStateOf(FilesPickerPage.MAIN) }
-    // 在子页面时，返回键回到上一级而不是关闭 sheet
-    BackHandler(enabled = page != FilesPickerPage.MAIN) {
-        page = page.parent
+
+    // ── 返回机制接到 SharpDialog（rp.28 改造）──────────────────────────
+    // 内部 page 栈保留（不动 5 个分支的 UI 代码），但「返回」这个动作
+    // 统一由 SharpDialog 发起：标题栏的 < 与系统返回键都走 controller.back()，
+    // 它先问 externalBackHandler —— 我们在这里把 page 退回上一级。
+    // 于是「返回」只有一套入口，不会出现两套各管一半的情况。
+    SideEffect {
+        dialog.externalBackAvailable = page != FilesPickerPage.MAIN
+        dialog.externalBackHandler = {
+            if (page != FilesPickerPage.MAIN) {
+                page = page.parent
+                true
+            } else {
+                false
+            }
+        }
     }
+
+    // 供 Spec 使用的标题（随 page 变化）
+    val dialogTitle = when (page) {
+        FilesPickerPage.MAIN -> stringResource(R.string.more_options)
+        FilesPickerPage.MCP -> stringResource(R.string.assistant_page_tab_mcp)
+        FilesPickerPage.EXTENSIONS -> stringResource(R.string.assistant_page_tab_extensions)
+        FilesPickerPage.SEARCH -> stringResource(R.string.use_web_search)
+        FilesPickerPage.SEARCH_PROVIDER -> stringResource(R.string.search_picker_select_provider)
+    }
+
+    // 内容整体塞进 SharpDialog（2/3 高度、标题栏、遮罩关闭都由它提供）
+    val spec = SharpDialogSpec(
+        title = dialogTitle,
+        placement = SharpDialogPlacement.Bottom,
+        content = {
     AnimatedContent(
         targetState = page,
         transitionSpec = {
@@ -161,6 +212,8 @@ internal fun FilesPicker(
                 mcpManager = mcpManager,
                 onUpdateAssistant = onUpdateAssistant,
                 onBack = { page = FilesPickerPage.MAIN },
+                // 容器已画标题栏与返回箭头
+                showHeader = false,
             )
 
             FilesPickerPage.EXTENSIONS -> ExtensionPickerPage(
@@ -169,6 +222,7 @@ internal fun FilesPicker(
                 onUpdateAssistant = onUpdateAssistant,
                 onBack = { page = FilesPickerPage.MAIN },
                 onDismissAll = onDismiss,
+                showHeader = false,
             )
 
             FilesPickerPage.SEARCH -> SearchPickerPage(
@@ -179,6 +233,7 @@ internal fun FilesPicker(
                 onSelectProvider = { page = FilesPickerPage.SEARCH_PROVIDER },
                 onBack = { page = FilesPickerPage.MAIN },
                 onDismissAll = onDismiss,
+                showHeader = false,
             )
 
             FilesPickerPage.SEARCH_PROVIDER -> SearchProviderPicker(
@@ -188,6 +243,7 @@ internal fun FilesPicker(
                     page = FilesPickerPage.SEARCH
                 },
                 onBack = { page = FilesPickerPage.SEARCH },
+                showHeader = false,
             )
 
             FilesPickerPage.MAIN -> Column(
@@ -227,7 +283,7 @@ internal fun FilesPicker(
                         enableSearch = assistant.enableWebSearch,
                         settings = settings,
                         model = chatModel,
-                        shapes = ListItemDefaults.segmentedShapes(index = itemIndex++, count = itemCount),
+                        shapes = sharpSegmentedShapes(),
                         onClick = { page = FilesPickerPage.SEARCH },
                     )
 
@@ -235,7 +291,7 @@ internal fun FilesPicker(
                         WorkspacePickerListItem(
                             assistant = assistant,
                             workspaces = workspaces,
-                            shapes = ListItemDefaults.segmentedShapes(index = itemIndex++, count = itemCount),
+                            shapes = sharpSegmentedShapes(),
                             onUpdateAssistant = onUpdateAssistant,
                             onNavigateToDetail = { id ->
                                 onDismiss()
@@ -255,7 +311,7 @@ internal fun FilesPicker(
                         if (showCwd) {
                             SegmentedListItem(
                                 onClick = { showCwdSheet = true },
-                                shapes = ListItemDefaults.segmentedShapes(index = itemIndex++, count = itemCount),
+                                shapes = sharpSegmentedShapes(),
                                 leadingContent = {
                                     Icon(
                                         imageVector = HugeIcons.Folder01,
@@ -281,7 +337,7 @@ internal fun FilesPicker(
                             assistant = assistant,
                             servers = settings.mcpServers,
                             mcpManager = mcpManager,
-                            shapes = ListItemDefaults.segmentedShapes(index = itemIndex++, count = itemCount),
+                            shapes = sharpSegmentedShapes(),
                             onClick = { page = FilesPickerPage.MCP },
                         )
                     }
@@ -294,7 +350,7 @@ internal fun FilesPicker(
                             assistant.enabledSkills.size
                     SegmentedListItem(
                         onClick = { page = FilesPickerPage.EXTENSIONS },
-                        shapes = ListItemDefaults.segmentedShapes(index = itemIndex++, count = itemCount),
+                        shapes = sharpSegmentedShapes(),
                         leadingContent = {
                             Icon(
                                 imageVector = HugeIcons.Package,
@@ -314,7 +370,7 @@ internal fun FilesPicker(
                     if (showCompress) {
                         SegmentedListItem(
                             onClick = { onShowCompressDialogChange(true) },
-                            shapes = ListItemDefaults.segmentedShapes(index = itemIndex++, count = itemCount),
+                            shapes = sharpSegmentedShapes(),
                             leadingContent = {
                                 Icon(
                                     imageVector = HugeIcons.Package01,
@@ -359,6 +415,10 @@ internal fun FilesPicker(
             }
         }
     }
+        },   // ← SharpDialogSpec.content 结束
+    )
+    // 首次 show、之后只更新内容：assistant / settings / page 变了都要跟着刷
+    SideEffect { dialog.showOrUpdate(spec) }
 
     if (showCwdSheet && boundWorkspace != null) {
         WorkspaceCwdPickerSheet(
@@ -467,6 +527,8 @@ private fun ExtensionPickerPage(
     onUpdateAssistant: (Assistant) -> Unit,
     onBack: () -> Unit,
     onDismissAll: () -> Unit,
+    /** SharpDialog 作容器时会自己画标题栏与返回箭头，此时跳过本页自带表头。 */
+    showHeader: Boolean = true,
 ) {
     val navController = LocalNavController.current
 
@@ -476,14 +538,16 @@ private fun ExtensionPickerPage(
             .fillMaxHeight(0.75f)
             .padding(horizontal = 16.dp),
     ) {
-        SheetHeader(
-            title = stringResource(R.string.assistant_page_tab_extensions),
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(HugeIcons.ArrowLeft01, contentDescription = stringResource(R.string.back))
-                }
-            },
-        )
+        if (showHeader) {
+            SheetHeader(
+                title = stringResource(R.string.assistant_page_tab_extensions),
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(HugeIcons.ArrowLeft01, contentDescription = stringResource(R.string.back))
+                    }
+                },
+            )
+        }
         ExtensionSelector(
             assistant = assistant,
             settings = settings,
@@ -513,6 +577,25 @@ private class AttachmentAction(
 )
 
 // 附件入口：一行最多四个，再多就均分成两行
+/**
+ * 分段列表的直角形状。
+ *
+ * SharpUI 是直角体系，而 M3 的 `ListItemDefaults.segmentedShapes(index, count)`
+ * 会给首尾项加圆角。这里统一换成 [RectangleShape]，与弹窗其它部位一致。
+ */
+private fun sharpSegmentedShapes(): ListItemShapes {
+    // ListItemShapes 有 6 个槽位：常态 / 选中 / 按下 / 聚焦 / 悬停 / 拖拽。
+    // 只传前两个时其余会沿用 M3 默认的非零圆角 —— 必须全部给直角。
+    return ListItemShapes(
+        shape = RectangleShape,
+        selectedShape = RectangleShape,
+        pressedShape = RectangleShape,
+        focusedShape = RectangleShape,
+        hoveredShape = RectangleShape,
+        draggedShape = RectangleShape,
+    )
+}
+
 @Composable
 private fun AttachmentGrid(
     actions: List<AttachmentAction>,
@@ -544,15 +627,34 @@ private fun AttachmentTile(
     action: AttachmentAction,
     modifier: Modifier = Modifier,
 ) {
-    FilledTonalButton(
-        onClick = action.onClick,
-        // 按下时圆角收紧
-        shapes = ButtonDefaults.shapes(
-            shape = MaterialTheme.shapes.extraLarge,
-            pressedShape = MaterialTheme.shapes.medium,
-        ),
-        modifier = modifier.heightIn(min = 88.dp),
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 16.dp),
+    // ── SharpUI 果冻直角按钮（用户规范）──────────────────────────────
+    // 「【拍照】【照片】【草图】【上传文件】保持顶部按钮样式，
+    //   使用 sharpui 的果冻特效按钮」
+    //  · 直角：不复用 M3 的 FilledTonalButton（自带圆角 + 按压变圆）
+    //  · 果冻：按下 1.06 线性放大 90ms，松开低阻尼弹簧回弹
+    //  · 底色沿用 tonal 观感（primaryContainer 的浅蓝），不抢视觉
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale = remember { Animatable(1f) }
+    LaunchedEffect(pressed) {
+        if (pressed) {
+            scale.animateTo(
+                SharpMotion.PressScale,
+                tween(SharpMotion.PressMs, easing = SharpMotion.easing),
+            )
+        } else {
+            scale.animateTo(1f, spring(SharpMotion.DampingRatio, SharpMotion.Stiffness))
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .heightIn(min = 88.dp)
+            .graphicsLayer { scaleX = scale.value; scaleY = scale.value }
+            .background(MaterialTheme.colorScheme.primaryContainer, RectangleShape)
+            .clickable(interactionSource = interaction, indication = null, onClick = action.onClick)
+            .padding(horizontal = 8.dp, vertical = 16.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -562,9 +664,11 @@ private fun AttachmentTile(
                 imageVector = action.icon,
                 contentDescription = null,
                 modifier = Modifier.size(28.dp),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             Text(
                 text = stringResource(action.label),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
                 // 四个并排时较长的译文放不下，自动缩小字号
                 autoSize = TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = 14.sp),
                 maxLines = 1,

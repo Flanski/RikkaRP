@@ -117,6 +117,7 @@ import org.koin.compose.koinInject
 import me.rerere.rikkahub.ui.pages.chat.VoicePhase
 import me.rerere.rikkahub.ui.pages.chat.VoiceSessionState
 import kotlin.uuid.Uuid
+import me.rerere.rikkahub.ui.icons.AppIcons
 
 @Composable
 fun ChatInput(
@@ -143,6 +144,11 @@ fun ChatInput(
     onStartVoiceMode: (() -> Unit)? = null,
     voiceState: VoiceSessionState = VoiceSessionState(),
     onStopVoiceMode: () -> Unit = {},
+    /**
+     * 打开「工具」弹窗。为 null 时不显示该按钮
+     * （比如浮窗/嵌入场景不需要，交给调用方决定）。
+     */
+    onOpenTools: (() -> Unit)? = null,
 ) {
     val toaster = LocalToaster.current
     val containerColor = MaterialTheme.colorScheme.surfaceContainerLow
@@ -304,6 +310,17 @@ fun ChatInput(
                                     },
                                     onlyIcon = true,
                                 )
+                            }
+
+                            // 工具：打开 SharpUI 2/3 弹窗（基础工具 / 拓展工具）
+                            // 图标取自工作区里 Litchi Agent 用的那套（AppIcons.Tools）。
+                            if (onOpenTools != null) {
+                                ActionIconButton(onClick = onOpenTools) {
+                                    Icon(
+                                        imageVector = AppIcons.Tools,
+                                        contentDescription = stringResource(R.string.tools),
+                                    )
+                                }
                             }
 
                         }

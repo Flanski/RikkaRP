@@ -1784,4 +1784,13 @@
   <string name="bottom_nav_chat">對話</string>
   <string name="bottom_nav_assistant">助手</string>
   <string name="chat_page_menu_assistant_settings">助手設定</string>
+  <string name="tool_sheet_javascript">JavaScript 引擎</string>
+  <string name="tool_sheet_time">時間資訊</string>
+  <string name="tool_sheet_clipboard">剪貼簿</string>
+  <string name="tool_sheet_tts">語音合成</string>
+  <string name="tool_sheet_ask_user">詢問使用者</string>
+  <string name="tool_sheet_screen_time">螢幕使用時間</string>
+  <string name="tool_sheet_calendar">行事曆</string>
+  <string name="tool_sheet_chart">圖表顯示</string>
+  <string name="tools">工具</string>
 </resources>

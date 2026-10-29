@@ -142,20 +142,24 @@ internal fun SearchPickerPage(
     onSelectProvider: () -> Unit,
     onBack: () -> Unit,
     onDismissAll: () -> Unit,
+    /** SharpDialog 作为容器时它自己画标题栏与返回箭头，这时跳过本页自带表头。 */
+    showHeader: Boolean = true,
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
     ) {
-        SheetHeader(
-            title = stringResource(R.string.use_web_search),
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(HugeIcons.ArrowLeft01, contentDescription = stringResource(R.string.back))
-                }
-            },
-        )
+        if (showHeader) {
+            SheetHeader(
+                title = stringResource(R.string.use_web_search),
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(HugeIcons.ArrowLeft01, contentDescription = stringResource(R.string.back))
+                    }
+                },
+            )
+        }
         SearchPicker(
             enableSearch = enableSearch,
             settings = settings,
@@ -359,6 +363,8 @@ internal fun SearchProviderPicker(
     settings: Settings,
     onUpdateSearchService: (Int) -> Unit,
     onBack: () -> Unit,
+    /** SharpDialog 作容器时会自己画标题栏与返回箭头，此时跳过本页自带表头。 */
+    showHeader: Boolean = true,
 ) {
     val services = settings.searchServices
     Column(
@@ -367,14 +373,16 @@ internal fun SearchProviderPicker(
             .fillMaxHeight(0.7f)
             .padding(horizontal = 16.dp),
     ) {
-        SheetHeader(
-            title = stringResource(R.string.search_picker_select_provider),
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(HugeIcons.ArrowLeft01, contentDescription = stringResource(R.string.back))
-                }
-            },
-        )
+        if (showHeader) {
+            SheetHeader(
+                title = stringResource(R.string.search_picker_select_provider),
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(HugeIcons.ArrowLeft01, contentDescription = stringResource(R.string.back))
+                    }
+                },
+            )
+        }
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()

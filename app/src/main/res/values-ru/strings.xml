@@ -1786,4 +1786,13 @@
   <string name="bottom_nav_chat">Чат</string>
   <string name="bottom_nav_assistant">Ассистент</string>
   <string name="chat_page_menu_assistant_settings">Настройки ассистента</string>
+  <string name="tool_sheet_javascript">JavaScript-движок</string>
+  <string name="tool_sheet_time">Время</string>
+  <string name="tool_sheet_clipboard">Буфер обмена</string>
+  <string name="tool_sheet_tts">Синтез речи</string>
+  <string name="tool_sheet_ask_user">Спросить пользователя</string>
+  <string name="tool_sheet_screen_time">Экранное время</string>
+  <string name="tool_sheet_calendar">Календарь</string>
+  <string name="tool_sheet_chart">График</string>
+  <string name="tools">Инструменты</string>
 </resources>

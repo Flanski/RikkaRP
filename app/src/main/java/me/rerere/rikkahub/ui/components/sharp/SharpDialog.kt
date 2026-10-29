@@ -184,18 +184,27 @@ class SharpDialogController {
      * 用 mutableStateOf 而不是普通字段：标题栏要据此在「类型图标」和「< 返回」之间切换，
      * 必须是可观察状态，否则 push/pop 之后标题栏不会重组。
      */
-    var canGoBack: Boolean by mutableStateOf(false)
-        private set
+    val canGoBack: Boolean
+        get() = backStack.isNotEmpty() || externalBackAvailable
 
-    /** 每次栈变化后同步 [canGoBack]。 */
-    private fun syncCanGoBack() {
-        canGoBack = backStack.isNotEmpty()
-    }
+    /**
+     * 外部（内容自带子页面栈的弹窗）注入的返回处理。
+     *
+     * 返回 `true` 表示"这次返回我已经处理了"，SharpDialog 不再动自己的栈。
+     * 用它是因为加号弹窗（FilesPicker）内部有 5 个 page，
+     * 那套 page 状态机的历史比 SharpDialog 更早、改动面也更大；
+     * 与其把 5 个分支全部搬进 push/pop，不如让 SharpDialog 把「返回」这个动作
+     * 转交给它 —— 标题栏的 `<` 与系统返回键都走同一个入口，仍然是一套逻辑。
+     */
+    var externalBackHandler: (() -> Boolean)? by mutableStateOf(null)
+
+    /** 外部告知「当前是否有可返回的上级」，用于决定标题栏是否显示 `<`。 */
+    var externalBackAvailable: Boolean by mutableStateOf(false)
+
 
     /** 打开弹窗（作为顶层页面），会清空页面栈。 */
     fun show(spec: SharpDialogSpec) {
         backStack.clear()
-        syncCanGoBack()
         nav = SheetNav.RESET
         current = spec
     }
@@ -206,7 +215,6 @@ class SharpDialogController {
      */
     fun push(spec: SharpDialogSpec) {
         current?.let { backStack.add(it) }
-        syncCanGoBack()
         nav = SheetNav.FORWARD
         current = spec
     }
@@ -214,22 +222,49 @@ class SharpDialogController {
     /** 返回上一级；返回 false 表示已在顶层。 */
     fun pop(): Boolean {
         val previous = backStack.removeLastOrNull() ?: return false
-        syncCanGoBack()
         nav = SheetNav.BACK
         current = previous
         return true
     }
 
-    /** 「返回」统一入口：有上一级就回去，没有就关闭。 */
+    /**
+     * 「返回」统一入口。
+     *
+     * 顺序：先问 [externalBackHandler]（内容自己的子页栈），再退自己的栈。
+     *
+     * ★ 顶层时**不**关闭弹窗 —— 用户规范：
+     *   「直接关闭弹窗的方法已明确实现，就是点击背景遮罩即可关闭弹窗」。
+     */
     fun back() {
-        if (!pop()) dismiss()
+        if (externalBackHandler?.invoke() == true) return
+        pop()
     }
 
     fun dismiss() {
         nav = SheetNav.RESET
         backStack.clear()
-        syncCanGoBack()
         current = null
+    }
+
+    /**
+     * 「首次 show、之后只更新内容」。
+     *
+     * 供**内容依赖响应式状态**的弹窗使用（如加号弹窗里的开关会随 assistant 变化）。
+     * `SharpDialogSpec.content` 是一个捕获快照的 lambda，一旦 [show] 就固定，
+     * 所以每次重组都要把新的 spec 同步进来，否则界面不会跟着状态变。
+     *
+     * 刻意不复用 [show]：show 会 `backStack.clear()` + `nav = RESET`，
+     * 每帧调用会把用户刚进入的子页面栈清掉。
+     *
+     * 约定：内容可能变化的弹窗用本方法；一次性内容（通知/确认框）仍用 [show]。
+     */
+    fun showOrUpdate(spec: SharpDialogSpec) {
+        if (current == null) {
+            show(spec)
+        } else {
+            // 只换内容，不动栈与 nav —— 否则正在播的转场方向会被重置
+            current = spec
+        }
     }
 
     /** 普通通知：只有「确定」。 */
@@ -655,7 +690,9 @@ private fun BoxScope.SharpDialogLayer(controller: SharpDialogController) {
                 // 而是：有上级 -> 回上一级；已在顶层 -> 什么也不做（吞掉事件，
                 // 避免误触把底层页面也退掉）。
                 BackHandler(enabled = true) {
-                    if (controller.canGoBack) controller.pop()
+                    // 有可返回的上级 → 返回上一级；已在顶层 → 吞掉事件
+                    // （关闭弹窗只能点遮罩，这是用户明确的规范）
+                    if (controller.canGoBack) controller.back()
                 }
 
                 DialogHeader(

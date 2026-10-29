@@ -1786,4 +1786,13 @@ mDNS 주소: .local 호스트네임을 사용하며, IP를 몰라도 같은 네�
   <string name="bottom_nav_chat">대화</string>
   <string name="bottom_nav_assistant">어시스턴트</string>
   <string name="chat_page_menu_assistant_settings">어시스턴트 설정</string>
+  <string name="tool_sheet_javascript">JavaScript 엔진</string>
+  <string name="tool_sheet_time">시간 정보</string>
+  <string name="tool_sheet_clipboard">클립보드</string>
+  <string name="tool_sheet_tts">음성 합성</string>
+  <string name="tool_sheet_ask_user">사용자에게 질문</string>
+  <string name="tool_sheet_screen_time">스크린 타임</string>
+  <string name="tool_sheet_calendar">캘린더</string>
+  <string name="tool_sheet_chart">차트 표시</string>
+  <string name="tools">도구</string>
 </resources>

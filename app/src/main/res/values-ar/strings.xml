@@ -1784,4 +1784,13 @@
   <string name="bottom_nav_chat">محادثة</string>
   <string name="bottom_nav_assistant">المساعد</string>
   <string name="chat_page_menu_assistant_settings">إعدادات المساعد</string>
+  <string name="tool_sheet_javascript">محرك JavaScript</string>
+  <string name="tool_sheet_time">معلومات الوقت</string>
+  <string name="tool_sheet_clipboard">الحافظة</string>
+  <string name="tool_sheet_tts">تحويل النص إلى كلام</string>
+  <string name="tool_sheet_ask_user">اسأل المستخدم</string>
+  <string name="tool_sheet_screen_time">وقت الشاشة</string>
+  <string name="tool_sheet_calendar">التقويم</string>
+  <string name="tool_sheet_chart">عرض الرسم البياني</string>
+  <string name="tools">الأدوات</string>
 </resources>

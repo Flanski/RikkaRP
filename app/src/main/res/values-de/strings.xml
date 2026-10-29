@@ -1787,4 +1787,13 @@
   <string name="bottom_nav_chat">Chat</string>
   <string name="bottom_nav_assistant">Assistent</string>
   <string name="chat_page_menu_assistant_settings">Assistenten-Einstellungen</string>
+  <string name="tool_sheet_javascript">JavaScript-Engine</string>
+  <string name="tool_sheet_time">Zeitinfo</string>
+  <string name="tool_sheet_clipboard">Zwischenablage</string>
+  <string name="tool_sheet_tts">Sprachausgabe</string>
+  <string name="tool_sheet_ask_user">Benutzer fragen</string>
+  <string name="tool_sheet_screen_time">Bildschirmzeit</string>
+  <string name="tool_sheet_calendar">Kalender</string>
+  <string name="tool_sheet_chart">Diagramm</string>
+  <string name="tools">Werkzeuge</string>
 </resources>

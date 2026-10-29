@@ -1798,4 +1798,13 @@ mDNS 地址：使用 .local 主机名，同一网络中的其他设备可通过�
   <string name="bottom_nav_chat">对话</string>
   <string name="bottom_nav_assistant">助手</string>
   <string name="chat_page_menu_assistant_settings">助手设置</string>
+  <string name="tool_sheet_javascript">JavaScript 引擎</string>
+  <string name="tool_sheet_time">时间信息</string>
+  <string name="tool_sheet_clipboard">剪贴板</string>
+  <string name="tool_sheet_tts">语音合成</string>
+  <string name="tool_sheet_ask_user">询问用户</string>
+  <string name="tool_sheet_screen_time">屏幕使用时间</string>
+  <string name="tool_sheet_calendar">日历</string>
+  <string name="tool_sheet_chart">图表显示</string>
+  <string name="tools">工具</string>
 </resources>

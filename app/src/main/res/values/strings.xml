@@ -1796,4 +1796,13 @@
   <string name="bottom_nav_chat">Chat</string>
   <string name="bottom_nav_assistant">Assistant</string>
   <string name="chat_page_menu_assistant_settings">Assistant Settings</string>
+  <string name="tool_sheet_javascript">JavaScript Engine</string>
+  <string name="tool_sheet_time">Time Info</string>
+  <string name="tool_sheet_clipboard">Clipboard</string>
+  <string name="tool_sheet_tts">Text to Speech</string>
+  <string name="tool_sheet_ask_user">Ask User</string>
+  <string name="tool_sheet_screen_time">Screen Time</string>
+  <string name="tool_sheet_calendar">Calendar</string>
+  <string name="tool_sheet_chart">Chart Display</string>
+  <string name="tools">Tools</string>
 </resources>
