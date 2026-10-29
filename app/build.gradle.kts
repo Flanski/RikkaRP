@@ -32,8 +32,8 @@ android {
         //   从本版往后每次发版必须严格递增，不要再回退。
         //
         // 血缘：rikkahub 3.1.1(versionCode 194) → RikkaRP 3.1.1-rp.1..25(#195..219) → 0.0.1(#1)
-        versionCode = 4
-        versionName = "0.0.4"
+        versionCode = 5
+        versionName = "0.0.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

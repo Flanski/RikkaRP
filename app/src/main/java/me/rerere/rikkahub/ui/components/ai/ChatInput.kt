@@ -288,10 +288,19 @@ fun ChatInput(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
+                        // ★ verticalAlignment 必须显式写！
+                        //   Row 默认是 Alignment.Top —— 这一排里各按钮容器高度并不相同：
+                        //     ModelSelectorButton → M3 IconButton（48dp）
+                        //     ReasoningButton     → ToggleSurface + 内边距（约 40dp）
+                        //     ActionIconButton    → Surface(30dp)
+                        //   顶部对齐时，容器越矮的图标中心越靠上，
+                        //   视觉上就是"鲸鱼最低、灯泡居中、扳手最高"的阶梯。
+                        //   改成 CenterVertically 后三者图标中心落在同一水平线。
                         Row(
                             modifier = Modifier
                                 .weight(1f)
                                 .horizontalScroll(rememberScrollState()),
+                            verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             // Model Picker
