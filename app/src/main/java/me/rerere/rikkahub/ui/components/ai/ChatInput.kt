@@ -316,9 +316,12 @@ fun ChatInput(
                             // 图标取自工作区里 Litchi Agent 用的那套（AppIcons.Tools）。
                             if (onOpenTools != null) {
                                 ActionIconButton(onClick = onOpenTools) {
+                                    // 显式 24dp：与 ReasoningButton 里一致，
+                                    // 也让"图标尺寸"这件事在代码里可见，不依赖 Icon 默认值。
                                     Icon(
                                         imageVector = AppIcons.Tools,
                                         contentDescription = stringResource(R.string.tools),
+                                        modifier = Modifier.size(24.dp),
                                     )
                                 }
                             }
